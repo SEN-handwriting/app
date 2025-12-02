@@ -1,0 +1,32 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'dev script db'",
+    "test": "echo 'Add test script here'",
+    "lint": "echo 'Add lint script here'",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "db:validate": "prisma validate"
+  },
+  "prisma": {
+    "seed": "bun prisma/seed.ts"
+  },
+  "exports": {
+    "./utils/*": "./src/utils/*.ts",
+    "./client": "./src/client.ts"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.10.1",
+    "prisma": "^7.0.0"
+  },
+  "dependencies": {
+    "@prisma/adapter-libsql": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "dotenv": "^17.2.3"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@repo/tailwind-config",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "tailwindcss": "^3.4.18"
+  }
+}

@@ -1,0 +1,10 @@
+@import "@repo/ui/styles.css";
+@import "tailwindcss";
+
+@layer base {
+  html {
+    background-color: #0a0a0a;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+}
