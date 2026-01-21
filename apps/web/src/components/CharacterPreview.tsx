@@ -1,0 +1,150 @@
+"use client";
+
+import type { Character } from "../data/characters";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+
+export type CharacterPreviewHandle = {
+  speak: () => void;
+  replay: () => void;
+};
+
+interface CharacterPreviewProps {
+  character: Character;
+  showStrokes: boolean;
+}
+
+export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
+  function CharacterPreview({ character, showStrokes }, ref) {
+    const pathRefs = useRef<Array<SVGPathElement | null>>([]);
+    const timeouts = useRef<number[]>([]);
+    const [animating, setAnimating] = useState(false);
+
+    useEffect(() => {
+      pathRefs.current.forEach(p => {
+        try {
+          if (!p) return;
+          const len = p.getTotalLength();
+          p.style.transition = "none";
+          p.style.strokeDasharray = `${len}`;
+          p.style.strokeDashoffset = `${len}`;
+          p.getBoundingClientRect();
+        } catch {}
+      });
+
+      return () => {
+        timeouts.current.forEach(id => clearTimeout(id));
+        timeouts.current = [];
+      };
+    }, [character.id]);
+
+    function playAnimation() {
+      if (!pathRefs.current.length) return;
+      setAnimating(true);
+      timeouts.current.forEach(id => clearTimeout(id));
+      timeouts.current = [];
+
+      let delay = 0;
+      pathRefs.current.forEach(p => {
+        if (!p) return;
+        try {
+          const len = p.getTotalLength();
+          p.style.transition = "none";
+          p.style.strokeDasharray = `${len}`;
+          p.style.strokeDashoffset = `${len}`;
+          p.getBoundingClientRect();
+
+          const id = window.setTimeout(() => {
+            p.style.transition = "stroke-dashoffset 1000ms ease-in-out";
+            p.style.strokeDashoffset = "0";
+          }, delay);
+
+          timeouts.current.push(id);
+          delay += 1000;
+        } catch {}
+      });
+
+      const endId = window.setTimeout(() => {
+        setAnimating(false);
+      }, delay + 100);
+      timeouts.current.push(endId);
+    }
+
+    function speak() {
+      if (typeof window === "undefined") return;
+      if (!("speechSynthesis" in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const ut = new SpeechSynthesisUtterance(
+          character.audioText || character.label || "",
+        );
+        ut.lang = character.lang || "ja-JP";
+        window.speechSynthesis.speak(ut);
+      } catch {}
+    }
+
+    useImperativeHandle(ref, () => ({ replay: playAnimation, speak }));
+
+    return (
+      <div>
+        <svg
+          viewBox="0 0 109 109"
+          width={300}
+          height={300}
+          style={{ border: "2px solid #ddd", background: "white" }}
+        >
+          <line
+            x1="54.5"
+            y1="0"
+            x2="54.5"
+            y2="109"
+            stroke="#ddd"
+            strokeWidth="1"
+          />
+          <line
+            x1="0"
+            y1="54.5"
+            x2="109"
+            y2="54.5"
+            stroke="#ddd"
+            strokeWidth="1"
+          />
+
+          {showStrokes &&
+            character.svgPaths.map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeWidth="3"
+                stroke="#000"
+                fill="none"
+                ref={el => {
+                  pathRefs.current[i] = el;
+                }}
+              />
+            ))}
+        </svg>
+
+        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+          <button onClick={speak}>Écouter</button>
+          <button onClick={playAnimation} disabled={animating}>
+            {animating ? "Animation..." : "Rejouer"}
+          </button>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <p style={{ fontSize: "18px", fontWeight: "bold" }}>
+            {character.label}
+          </p>
+        </div>
+      </div>
+    );
+  },
+);

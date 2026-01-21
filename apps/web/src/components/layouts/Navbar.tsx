@@ -38,7 +38,9 @@ export function Navbar() {
                     className="inline-flex items-center gap-2"
                   >
                     <Avatar>
-                      <AvatarImage src={data?.user.image} />
+                      <AvatarImage
+                        src={(data?.user.image ?? undefined) as string | undefined}
+                      />
                       <AvatarFallback>
                         {data?.user.name?.charAt(0)}
                       </AvatarFallback>
