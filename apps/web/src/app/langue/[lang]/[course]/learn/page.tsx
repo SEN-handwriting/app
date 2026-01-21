@@ -6,9 +6,7 @@ import Link from "next/link";
 import CharacterPreview, {
   CharacterPreviewHandle,
 } from "../../../../../components/CharacterPreview";
-import DrawCanvas, {
-  DrawCanvasHandle,
-} from "../../../../../components/DrawCanvas";
+import PracticeGrid from "../../../../../components/PracticeGrid";
 import { characters } from "../../../../../data/characters";
 
 export default function LearnPage() {
@@ -20,7 +18,6 @@ export default function LearnPage() {
 
   const [showStrokes, setShowStrokes] = useState(true);
   const previewRef = useRef<CharacterPreviewHandle | null>(null);
-  const drawRef = useRef<DrawCanvasHandle | null>(null);
 
   function findCharacter(param?: string | string[]) {
     if (!param) return undefined;
@@ -45,7 +42,6 @@ export default function LearnPage() {
 
   useEffect(() => {
     setTimeout(() => previewRef.current?.replay(), 50);
-    drawRef.current?.clear();
   }, [course]);
 
   if (!selected) {
@@ -79,6 +75,7 @@ export default function LearnPage() {
           marginTop: "30px",
         }}
       >
+        {/* Colonne gauche : Modèle et infos */}
         <div>
           <h2 style={{ fontSize: "24px", marginBottom: "15px" }}>Modèle</h2>
           <CharacterPreview
@@ -89,20 +86,45 @@ export default function LearnPage() {
 
           <div style={{ marginTop: "20px" }}>
             <h3 style={{ fontSize: "18px", marginBottom: "10px" }}>
-              Affichage
+              Contrôles
             </h3>
-            <button
-              onClick={() => setShowStrokes(!showStrokes)}
-              style={{
-                padding: "10px 20px",
-                cursor: "pointer",
-                backgroundColor: showStrokes ? "#000" : "#fff",
-                color: showStrokes ? "#fff" : "#000",
-                border: "1px solid #000",
-              }}
-            >
-              {showStrokes ? "Masquer les traits" : "Afficher les traits"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowStrokes(!showStrokes)}
+                style={{
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                  backgroundColor: showStrokes ? "#000" : "#fff",
+                  color: showStrokes ? "#fff" : "#000",
+                  border: "1px solid #000",
+                  borderRadius: "4px",
+                }}
+              >
+                {showStrokes ? "Masquer" : "Afficher"} traits
+              </button>
+              <button
+                onClick={() => previewRef.current?.replay()}
+                style={{
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                  border: "1px solid #000",
+                  borderRadius: "4px",
+                }}
+              >
+                Rejouer
+              </button>
+              <button
+                onClick={() => previewRef.current?.speak()}
+                style={{
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                  border: "1px solid #000",
+                  borderRadius: "4px",
+                }}
+              >
+                🔊 Écouter
+              </button>
+            </div>
           </div>
 
           {selected.meanings && (
@@ -116,20 +138,8 @@ export default function LearnPage() {
                 </p>
                 {selected.readings?.kana && (
                   <p>
-                    <strong>Lecture kana:</strong>{" "}
+                    <strong>Lecture:</strong>{" "}
                     {selected.readings.kana.join(", ")}
-                  </p>
-                )}
-                {selected.readings?.onyomi && (
-                  <p>
-                    <strong>On'yomi:</strong>{" "}
-                    {selected.readings.onyomi.join(", ")}
-                  </p>
-                )}
-                {selected.readings?.kunyomi && (
-                  <p>
-                    <strong>Kun'yomi:</strong>{" "}
-                    {selected.readings.kunyomi.join(", ")}
                   </p>
                 )}
                 {selected.romaji && (
@@ -152,32 +162,17 @@ export default function LearnPage() {
           )}
         </div>
 
+        {/* Colonne droite : Zone de pratique */}
         <div>
           <h2 style={{ fontSize: "24px", marginBottom: "15px" }}>
-            Votre tracé
+            Zone de pratique
           </h2>
-          <DrawCanvas ref={drawRef} width={300} height={300} />
+          <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
+            Progression : tracé complet → pointillés → vide. Le carré passe
+            automatiquement au niveau suivant quand vous réussissez !
+          </p>
 
-          <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
-            <button
-              onClick={() => drawRef.current?.clear()}
-              style={{ padding: "10px 20px", cursor: "pointer" }}
-            >
-              Effacer
-            </button>
-            <button
-              onClick={() => previewRef.current?.replay()}
-              style={{ padding: "10px 20px", cursor: "pointer" }}
-            >
-              Rejouer animation
-            </button>
-            <button
-              onClick={() => previewRef.current?.speak()}
-              style={{ padding: "10px 20px", cursor: "pointer" }}
-            >
-              Écouter
-            </button>
-          </div>
+          <PracticeGrid character={selected} />
         </div>
       </div>
     </main>

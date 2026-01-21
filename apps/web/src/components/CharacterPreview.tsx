@@ -98,6 +98,7 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
           height={300}
           style={{ border: "2px solid #ddd", background: "white" }}
         >
+          {/* Grille de guidage */}
           <line
             x1="54.5"
             y1="0"
@@ -115,6 +116,7 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
             strokeWidth="1"
           />
 
+          {/* Affichage des traits */}
           {showStrokes &&
             character.svgPaths.map((d, i) => (
               <path
@@ -122,7 +124,7 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
                 d={d}
                 strokeLinejoin="round"
                 strokeLinecap="round"
-                strokeWidth="3"
+                strokeWidth="2.5"
                 stroke="#000"
                 fill="none"
                 ref={el => {
@@ -131,13 +133,6 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
               />
             ))}
         </svg>
-
-        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-          <button onClick={speak}>Écouter</button>
-          <button onClick={playAnimation} disabled={animating}>
-            {animating ? "Animation..." : "Rejouer"}
-          </button>
-        </div>
 
         <div style={{ marginTop: "10px" }}>
           <p style={{ fontSize: "18px", fontWeight: "bold" }}>
