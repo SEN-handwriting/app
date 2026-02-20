@@ -1,55 +1,60 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import CharacterPreview, {
   CharacterPreviewHandle,
 } from "../../../../../components/CharacterPreview";
 import PracticeGrid from "../../../../../components/PracticeGrid";
-import { characters } from "../../../../../data/characters";
+import { useCharacter } from "../../../../../hooks/useCharacters";
 
 export default function LearnPage() {
   const params = useParams();
   const rawLang = params?.lang;
   const rawCourse = params?.course;
-  const lang = Array.isArray(rawLang) ? rawLang[0] : rawLang;
-  const course = Array.isArray(rawCourse) ? rawCourse[0] : rawCourse;
 
-  const [showStrokes, setShowStrokes] = useState(true);
-  const previewRef = useRef<CharacterPreviewHandle | null>(null);
+  const lang = Array.isArray(rawLang) ? rawLang[0] : (rawLang ?? "");
+  const courseParam = Array.isArray(rawCourse)
+    ? rawCourse[0]
+    : (rawCourse ?? "");
 
-  function findCharacter(param?: string | string[]) {
-    if (!param) return undefined;
-    const raw = Array.isArray(param) ? param[0] : param;
-    if (!raw) return undefined;
-
-    let decoded = raw;
-    try {
-      decoded = decodeURIComponent(raw);
-    } catch {}
-
-    let found = characters.find(c => c.id === raw || c.id === decoded);
-    if (found) return found;
-
-    found = characters.find(c => c.label === raw || c.label === decoded);
-    if (found) return found;
-
-    return undefined;
+  let characterId = "";
+  try {
+    characterId = decodeURIComponent(courseParam);
+  } catch {
+    characterId = courseParam;
   }
 
-  const selected = findCharacter(course);
+  const { data: character, isLoading, isError } = useCharacter(characterId);
+  const previewRef = useRef<CharacterPreviewHandle | null>(null);
+  const [showStrokes, setShowStrokes] = React.useState(true);
 
   useEffect(() => {
-    setTimeout(() => previewRef.current?.replay(), 50);
-  }, [course]);
+    if (character) {
+      setTimeout(() => previewRef.current?.replay(), 50);
+    }
+  }, [character]);
 
-  if (!selected) {
+  if (isLoading) {
+    return (
+      <div style={{ padding: "40px" }}>
+        <Link href={`/langue/${lang}`} style={{ color: "blue", textDecoration: "underline" }}>
+          ← Retour
+        </Link>
+        <p style={{ marginTop: "20px", color: "#666" }}>Chargement…</p>
+      </div>
+    );
+  }
+
+  if (isError || !character) {
     return (
       <div style={{ padding: "20px" }}>
-        <Link href={`/langue/${lang}`}>Retour aux cours</Link>
-        <h1>Caractère non trouvé</h1>
-        <p>ID recherché: {course}</p>
+        <Link href={`/langue/${lang}`} style={{ color: "blue", textDecoration: "underline" }}>
+          ← Retour aux cours
+        </Link>
+        <h1 style={{ marginTop: "16px" }}>Caractère non trouvé</h1>
+        <p style={{ color: "#666" }}>ID : {characterId}</p>
       </div>
     );
   }
@@ -64,7 +69,12 @@ export default function LearnPage() {
       </Link>
 
       <h1 style={{ fontSize: "36px", marginTop: "20px", marginBottom: "30px" }}>
-        Cours {selected.courseLevel} - {selected.label}
+        {character.label}
+        {character.romaji?.[0] && (
+          <span style={{ fontSize: "20px", color: "#666", marginLeft: "16px", fontWeight: "normal" }}>
+            {character.romaji[0]}
+          </span>
+        )}
       </h1>
 
       <div
@@ -75,19 +85,16 @@ export default function LearnPage() {
           marginTop: "30px",
         }}
       >
-        {/* Colonne gauche : Modèle et infos */}
+        {/* Colonne gauche : Modèle */}
         <div>
           <h2 style={{ fontSize: "24px", marginBottom: "15px" }}>Modèle</h2>
           <CharacterPreview
             ref={previewRef}
-            character={selected}
+            character={character}
             showStrokes={showStrokes}
           />
 
           <div style={{ marginTop: "20px" }}>
-            <h3 style={{ fontSize: "18px", marginBottom: "10px" }}>
-              Contrôles
-            </h3>
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <button
                 onClick={() => setShowStrokes(!showStrokes)}
@@ -127,39 +134,30 @@ export default function LearnPage() {
             </div>
           </div>
 
-          {selected.meanings && (
-            <div style={{ marginTop: "30px" }}>
-              <h3 style={{ fontSize: "18px", marginBottom: "10px" }}>
-                Informations
-              </h3>
-              <div style={{ fontSize: "14px", lineHeight: "1.8" }}>
-                <p>
-                  <strong>Signification:</strong> {selected.meanings.join(", ")}
-                </p>
-                {selected.readings?.kana && (
-                  <p>
-                    <strong>Lecture:</strong>{" "}
-                    {selected.readings.kana.join(", ")}
-                  </p>
-                )}
-                {selected.romaji && (
-                  <p>
-                    <strong>Rōmaji:</strong> {selected.romaji.join(", ")}
-                  </p>
-                )}
-                {selected.jlpt && (
-                  <p>
-                    <strong>JLPT:</strong> {selected.jlpt}
-                  </p>
-                )}
-                {selected.strokeCount && (
-                  <p>
-                    <strong>Nombre de traits:</strong> {selected.strokeCount}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Infos */}
+          <div style={{ marginTop: "30px", fontSize: "14px", lineHeight: "1.8" }}>
+            {character.meanings && (
+              <p>
+                <strong>Signification :</strong>{" "}
+                {character.meanings.join(", ")}
+              </p>
+            )}
+            {character.readings?.kana && (
+              <p>
+                <strong>Lecture :</strong> {character.readings.kana.join(", ")}
+              </p>
+            )}
+            {character.jlpt && (
+              <p>
+                <strong>JLPT :</strong> {character.jlpt}
+              </p>
+            )}
+            {character.strokeCount && (
+              <p>
+                <strong>Nombre de traits :</strong> {character.strokeCount}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Colonne droite : Zone de pratique */}
@@ -168,11 +166,10 @@ export default function LearnPage() {
             Zone de pratique
           </h2>
           <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
-            Progression : tracé complet → pointillés → vide. Le carré passe
+            Tracé complet → pointillés → vide. Le carré passe
             automatiquement au niveau suivant quand vous réussissez !
           </p>
-
-          <PracticeGrid character={selected} />
+          <PracticeGrid character={character} />
         </div>
       </div>
     </main>

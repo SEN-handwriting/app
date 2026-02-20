@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import DrawCanvas, { DrawCanvasHandle } from "./DrawCanvas";
 import type { Character } from "../data/characters";
-import { validateCharacter, validateStroke } from "../lib/stroke-validator";
+import { validateCharacter } from "../lib/stroke-validator";
 
 interface PracticeGridProps {
   character: Character;
@@ -47,8 +47,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
     // Valider UNIQUEMENT quand on a tous les traits
     if (strokes.length === character.svgPaths.length) {
       const result = validateCharacter(strokes, character.svgPaths, {
-        maxDistance: 220, // TRÈS augmenté pour les courbes complexes (trait 2 fait ~195)
-        minDirectionScore: 0.5,
         debug: true,
       });
 
@@ -133,7 +131,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
               width: "300px",
               height: "300px",
               pointerEvents: "none",
-              padding: "3px",
             }}
           >
             {character.svgPaths.map((d, i) => (

@@ -2,8 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { characters } from "../../data/characters";
 import { useParams } from "next/navigation";
+import { useCharacters } from "../../../hooks/useCharacters";
+
+const LANG_LABELS: Record<string, string> = {
+  "ja-JP": "Japonais — Hiragana",
+  "ru-RU": "Russe — Cyrillique",
+};
 
 export default function LangPage() {
   const params = useParams();
@@ -12,8 +17,10 @@ export default function LangPage() {
     Array.isArray(rawLang) ? rawLang[0] : (rawLang ?? "ja-JP")
   ) as string;
 
+  const { data: characters = [], isLoading, isError } = useCharacters(lang);
+
   const courses = Array.from(
-    new Set(characters.filter(c => c.lang === lang).map(c => c.courseLevel)),
+    new Set(characters.map((c) => c.courseLevel)),
   ).sort((a, b) => a - b);
 
   return (
@@ -26,14 +33,31 @@ export default function LangPage() {
       </Link>
 
       <h1 style={{ fontSize: "36px", marginTop: "20px", marginBottom: "30px" }}>
-        Cours disponibles - {lang}
+        {LANG_LABELS[lang] ?? lang}
       </h1>
 
+      {isLoading && (
+        <p style={{ color: "#666" }}>Chargement des caractères…</p>
+      )}
+
+      {isError && (
+        <p style={{ color: "#ef4444" }}>
+          Erreur lors du chargement. Veuillez réessayer.
+        </p>
+      )}
+
       <div style={{ display: "grid", gap: "20px" }}>
-        {courses.map(level => {
+        {courses.map((level) => {
           const courseChars = characters.filter(
-            c => c.lang === lang && c.courseLevel === level,
+            (c) => c.courseLevel === level,
           );
+          const levelLabel =
+            lang === "ru-RU"
+              ? level === 1
+                ? "Niveau 1 — Voyelles"
+                : "Niveau 2 — Consonnes"
+              : `Cours ${level}`;
+
           return (
             <div
               key={level}
@@ -44,7 +68,7 @@ export default function LangPage() {
               }}
             >
               <h2 style={{ fontSize: "24px", marginBottom: "15px" }}>
-                Cours {level}
+                {levelLabel}
               </h2>
               <div
                 style={{
@@ -53,7 +77,7 @@ export default function LangPage() {
                   gap: "15px",
                 }}
               >
-                {courseChars.map(c => (
+                {courseChars.map((c) => (
                   <Link
                     key={c.id}
                     href={`/langue/${encodeURIComponent(lang)}/${encodeURIComponent(c.id)}/learn`}
@@ -81,7 +105,7 @@ export default function LangPage() {
                           color: "#666",
                         }}
                       >
-                        {c.romaji?.[0] || ""}
+                        {c.romaji?.[0] ?? ""}
                       </p>
                     </div>
                   </Link>
