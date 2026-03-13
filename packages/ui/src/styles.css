@@ -5,6 +5,31 @@
 @theme {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --shadow-reflect: inset 0 2px 0 0 #ffffff1a;
+
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d0fae5;
+  --color-primary-200: #a4f4cf;
+  --color-primary-300: #5ee9b5;
+  --color-primary-400: #00d492;
+  --color-primary-500: #00bc7d;
+  --color-primary-600: #009966;
+  --color-primary-700: #007a55;
+  --color-primary-800: #006045;
+  --color-primary-900: #004f3b;
+  --color-primary-950: #002c22;
+
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #9f9fa9;
+  --color-neutral-500: #71717b;
+  --color-neutral-600: #52525c;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  --color-neutral-950: #09090b;
 }
 
 @layer base {

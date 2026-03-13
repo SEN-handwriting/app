@@ -1,8 +1,7 @@
-import { SignInWithGithubButton } from "#auth/components/SignInWithGithubButton";
 import { SignInForm } from "#auth/components/forms/SignInForm";
 import { Navbar } from "#/components/layouts/Navbar";
 import Link from "next/link";
-import { SignInWithDiscordButton } from "#auth/components/SignInWithDiscordButton";
+import { SignInWithGoogleButton } from "#auth/components/SignInWithGoogleButton";
 
 export default function SignIn() {
   return (
@@ -13,12 +12,11 @@ export default function SignIn() {
         <h1 className="text-3xl font-bold">Sign In</h1>
         <SignInForm />
 
-        {/* <span className="block text-center text-xs font-medium text-zinc-500 uppercase">
+        <span className="block text-center text-xs font-medium text-zinc-500 uppercase">
           or
         </span>
 
-        <SignInWithGithubButton className="w-full" />
-        <SignInWithDiscordButton className="w-full" /> */}
+        <SignInWithGoogleButton className="w-full" />
 
         <p className="mt-4">
           Don't have an account?{" "}

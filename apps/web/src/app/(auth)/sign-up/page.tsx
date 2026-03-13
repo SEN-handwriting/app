@@ -2,7 +2,7 @@ import { SignInWithGithubButton } from "#auth/components/SignInWithGithubButton"
 import { SignUpForm } from "#auth/components/forms/SignUpForm";
 import { Navbar } from "#/components/layouts/Navbar";
 import Link from "next/link";
-import { SignInWithDiscordButton } from "#auth/components/SignInWithDiscordButton";
+import { SignInWithDiscordButton } from "#auth/components/SignInWithGoogleButton";
 
 export default function SignUp() {
   return (
