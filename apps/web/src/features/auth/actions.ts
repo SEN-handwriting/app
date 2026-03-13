@@ -19,15 +19,9 @@ export async function signUp(data: SignUpSchemaOutput) {
   });
 }
 
-export function signInWithGithub() {
+export function signInWithGoogle() {
   return authClient.signIn.social({
-    provider: "github",
-  });
-}
-
-export function signInWithDiscord() {
-  return authClient.signIn.social({
-    provider: "discord",
+    provider: "google",
   });
 }
 

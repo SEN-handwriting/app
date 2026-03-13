@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Kanit, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Sen } from "next/font/google";
 
 import "./globals.css";
 import { ReactQueryProvider } from "#/providers/ReactQueryProvider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 
-const fontSans = Kanit({
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+const fontSans = Sen({
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-sans",
 });
 

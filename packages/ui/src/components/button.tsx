@@ -1,7 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { tv, VariantProps } from "tailwind-variants";
+import { tv, VariantProps, TVCompoundVariants } from "tailwind-variants";
 import { cn } from "@repo/ui/lib/utils";
 
 export type ButtonProps = Omit<
@@ -12,33 +12,29 @@ export type ButtonProps = Omit<
     asChild?: boolean;
   };
 
-const button = tv({
+export const button = tv({
   base: [
-    "inline-flex cursor-pointer items-center justify-center gap-2 border border-transparent px-2 py-1 text-center whitespace-nowrap select-none",
-    "outline-offset-0 transition-[outline-offset] duration-[20ms] ease-in-out",
+    "inline-flex cursor-pointer items-center justify-center gap-2 border border-transparent text-center whitespace-nowrap select-none",
+    "outline-offset-0 transition-[outline-offset] duration-20 ease-in-out",
     "active:translate-y-px",
     "focus-visible:outline-2 focus-visible:outline-offset-2",
-    "[&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0",
   ],
 
   variants: {
     color: {
-      primary:
-        "bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-blue-600",
-      secondary:
-        "bg-white text-black hover:bg-gray-100 focus-visible:outline-white",
+      primary: "",
+      secondary: "",
 
-      danger: "",
+      // danger: "",
       // success: "",
       // warning: "",
       // info: "",
     },
 
     variant: {
-      solid: "",
-      dashed: "border-dashed",
-      ghost: "",
-      flat: "",
+      solid: "shadow-reflect",
+      flat: "shadow-reflect",
     },
 
     radius: {
@@ -47,18 +43,38 @@ const button = tv({
     },
 
     size: {
-      sm: "px-1.5 py-0.5 text-xs [&_svg]:size-3",
-      md: "px-4 py-2 text-sm [&_svg]:size-4",
-      lg: "px-5 py-2.5 text-base [&_svg]:size-5",
-      test: "h-11 px-5.5 py-2.5 text-base [&_svg]:size-4",
-      "icon-sm": "size-8 p-1.5",
+      md: "px-4 py-2.5 text-sm [&_svg]:size-4",
+      lg: "px-5 py-2.5 text-base [&_svg]:size-6",
+      "icon-md": "size-9 p-2.5 [&_svg]:size-4",
+      "icon-lg": "size-14 p-4 [&_svg]:size-6",
     },
   },
+
+  compoundVariants: [
+    {
+      variant: "solid",
+      color: "primary",
+      className:
+        "bg-primary-900 hover:bg-primary-800 focus-visible:outline-primary-600 text-white",
+    },
+    {
+      variant: "solid",
+      color: "secondary",
+      className:
+        "bg-white text-black hover:bg-neutral-200 focus-visible:outline-white",
+    },
+    {
+      variant: "flat",
+      color: "secondary",
+      className:
+        "bg-neutral-800 text-white hover:bg-neutral-700 focus-visible:outline-neutral-500",
+    },
+  ],
 
   defaultVariants: {
     color: "primary",
     variant: "solid",
-    radius: "rounded",
+    radius: "full",
     size: "md",
   },
 });
