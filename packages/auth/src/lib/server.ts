@@ -28,9 +28,17 @@ export const auth = betterAuth({
   // socialProviders: {},
 
   // extending
-  // user: {
-  //   additionalFields: {},
-  // },
+  user: {
+    additionalFields: {
+      stats: {
+        type: "string",
+        references: {
+          model: "UserStats",
+          field: "id",
+        }
+      }
+    },
+  },
 });
 
 export type Auth = typeof auth;

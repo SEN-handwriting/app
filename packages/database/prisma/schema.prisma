@@ -8,25 +8,34 @@ datasource db {
   provider = "sqlite"
 }
 
-model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+// ─── Auth (better-auth) ───────────────────────────────────────────────────────
 
-  @@unique([email])
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  userStats UserStats[]
+  progress  UserProgress[]
+  sessions2 PracticeSession[]
+
+  stats     String?
+  userstats UserStats? @relation(fields: [stats], references: [id], onDelete: Cascade)
+
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
@@ -34,8 +43,8 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@map("session")
+  @@index([userId])
 }
 
 model Account {
@@ -55,6 +64,7 @@ model Account {
   updatedAt             DateTime  @updatedAt
 
   @@map("account")
+  @@index([userId])
 }
 
 model Verification {
@@ -66,4 +76,178 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+  @@index([identifier])
+}
+
+// ─── UserStats (géré par better-auth) ────────────────────────────────────────
+
+model UserStats {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("user_stats")
+  @@index([userId])
+}
+
+// ─── Langues ──────────────────────────────────────────────────────────────────
+
+model Language {
+  id        String   @id @default(cuid())
+  /// Code BCP-47 ex: "ja-JP", "ru-RU"
+  code      String   @unique
+  /// Nom affiché ex: "Japonais", "Russe"
+  name      String
+  /// Système d'écriture ex: "Hiragana", "Cyrillique"
+  script    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  characters Character[]
+  courses    Course[]
+  sessions   PracticeSession[]
+
+  @@map("language")
+}
+
+// ─── Cours ───────────────────────────────────────────────────────────────────
+
+model Course {
+  id          String   @id @default(cuid())
+  languageId  String
+  language    Language @relation(fields: [languageId], references: [id])
+  /// Numéro de niveau ex: 1, 2, 3
+  level       Int
+  /// Titre affiché ex: "Cours 1 — Voyelles"
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  characters Character[]
+
+  @@unique([languageId, level])
+  @@map("course")
+  @@index([languageId])
+}
+
+// ─── Caractères ───────────────────────────────────────────────────────────────
+
+model Character {
+  /// Identifiant lisible ex: "hiragana-あ", "cyrillic-А"
+  id         String   @id
+  languageId String
+  language   Language @relation(fields: [languageId], references: [id])
+  courseId   String?
+  course     Course?  @relation(fields: [courseId], references: [id])
+
+  /// Caractère affiché ex: "あ"
+  label       String
+  /// Texte passé au TTS
+  audioText   String
+  strokeCount Int?
+  /// Niveau JLPT ex: "N5"
+  jlpt        String?
+  courseLevel Int     @default(1)
+
+  // Tableaux sérialisés en JSON (SQLite ne supporte pas les tableaux natifs)
+  /// JSON: string[]  — chemins SVG des traits
+  svgPaths String
+  /// JSON: string[]  — ex: ["hiragana a"]
+  meanings String?
+  /// JSON: string[]  — ex: ["a"]
+  romaji   String?
+  /// JSON: { kana?: string[], onyomi?: string[], kunyomi?: string[] }
+  readings String?
+
+  progress UserProgress[]
+  attempts StrokeAttempt[]
+
+  @@map("character")
+  @@index([languageId])
+  @@index([courseId])
+}
+
+// ─── Progression utilisateur (répétition espacée SM-2) ───────────────────────
+
+model UserProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  /// Niveau dans la grille d'entraînement : 0 = modèle visible, 1 = pointillés, 2 = vide
+  practiceLevel Int @default(0)
+
+  // Algorithme SM-2
+  repetitions Int   @default(0)
+  easeFactor  Float @default(2.5)
+  /// Intervalle en jours avant la prochaine révision
+  interval    Int   @default(1)
+
+  nextReview    DateTime  @default(now())
+  successCount  Int       @default(0)
+  failCount     Int       @default(0)
+  lastPracticed DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, characterId])
+  @@map("user_progress")
+  @@index([userId])
+  @@index([characterId])
+  @@index([userId, nextReview])
+}
+
+// ─── Sessions d'entraînement ─────────────────────────────────────────────────
+
+model PracticeSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languageId String
+  language   Language @relation(fields: [languageId], references: [id])
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  totalChars   Int    @default(0)
+  correctCount Int    @default(0)
+  /// Score global de 0 à 100
+  score        Float?
+
+  attempts StrokeAttempt[]
+
+  @@map("practice_session")
+  @@index([userId])
+  @@index([languageId])
+}
+
+// ─── Tentatives de tracé ─────────────────────────────────────────────────────
+
+model StrokeAttempt {
+  id          String          @id @default(cuid())
+  sessionId   String
+  session     PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  /// JSON: données du tracé brut (points, timings)
+  strokeData String?
+  /// Score de 0 à 100
+  score      Float
+  /// JSON: métriques détaillées (direction, courbure, ordre des traits…)
+  feedback   String?
+  isSuccess  Boolean @default(false)
+
+  attemptedAt DateTime @default(now())
+
+  @@map("stroke_attempt")
+  @@index([sessionId])
+  @@index([characterId])
 }
