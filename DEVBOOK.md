@@ -1,7 +1,7 @@
 # DEVBOOK — Sen: Learn the Line
 
 > Guide de développement complet du projet Sen.
-> Dernière mise à jour: 13/03/2026
+> Dernière mise à jour: 25/03/2026
 
 ---
 
@@ -295,40 +295,41 @@ Schémas Valibot pour les formulaires d'auth:
 ### Schéma Prisma (SQLite)
 
 ```prisma
-model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-}
+// ─── Auth (better-auth) ──────────────────────────────────────
+model User { id, name, email, sessions[], accounts[], userStats[], progress[], sessions2[] }
+model Session { id, token, userId, expiresAt }
+model Account { ... }       // OAuth / credentials
+model Verification { ... }  // Email verification tokens
 
-model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String   @unique
-  userId    String
-  user      User     @relation(onDelete: Cascade)
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+// ─── Contenu ─────────────────────────────────────────────────
+model Language { id, code, name, script, characters[], courses[] }
+model Course    { id, languageId, level, title, characters[] }
+model Character { id, label, audioText, svgPaths(JSON), strokeCount, ... }
 
-model Account { ... }      // OAuth / credentials
-model Verification { ... } // Email verification tokens
+// ─── Progression (SM-2) ──────────────────────────────────────
+model UserProgress {
+  // repetitions, easeFactor, interval (SM-2)
+  // practiceLevel 0→1→2
+  // successCount, failCount, nextReview
+}
+model PracticeSession { id, userId, languageId, startedAt, score, attempts[] }
+model StrokeAttempt   { id, sessionId, characterId, score, feedback(JSON), isSuccess }
+model UserStats       { id, userId, key, value }  // Stats agrégées clé/valeur
 ```
 
-> **Important**: Les données de caractères et la progression utilisateur ne sont pas encore persistées en base. Les caractères sont dans `apps/web/src/data/characters.ts`.
+> **Important**: Le schéma DB est complet. Il reste à brancher le seed script (`characters.ts` → DB) et à implémenter les routes API côté serveur.
 
-### À implémenter (backlog DB)
-- `CharacterProgress` — progression par utilisateur et caractère
-- `LearningSession` — sessions d'entraînement
-- `UserStats` — statistiques globales
+### État des modèles
+| Modèle | Schéma | Routes API | Frontend |
+|---|---|---|---|
+| User / Session / Account | ✅ | ✅ Better-Auth | ✅ |
+| Language | ✅ | ❌ | ❌ |
+| Course | ✅ | ❌ | ❌ |
+| Character | ✅ | ⚠️ fichier statique | ⚠️ |
+| UserProgress | ✅ | ❌ | ❌ |
+| PracticeSession | ✅ | ❌ | ❌ |
+| StrokeAttempt | ✅ | ❌ | ❌ |
+| UserStats | ✅ | ❌ | ❌ |
 
 ---
 
@@ -660,44 +661,236 @@ git merge features/<nom>         # Merge (via PR)
 
 ## 14. Roadmap & backlog
 
-### En cours (branche `features/proto-canvas`)
-- [x] Canvas de dessin avec tracking de traits
-- [x] Validation de traits (coverage + direction)
-- [x] Aperçu animé des caractères (SVG)
-- [x] Grille de pratique avec 3 niveaux
-- [x] Support Hiragana (KanjiVG)
-- [x] Support Cyrillique (paths manuels)
-- [x] API `/api/characters` et `/api/kanjivg`
+### ✅ Déjà livré
 
-### Priorité haute (next sprint)
-- [ ] **Persistance de la progression** — `CharacterProgress` en DB
-  - Score par caractère, nombre de tentatives, maîtrise (0-3)
-  - Lié à l'utilisateur (User)
-- [ ] **Tableau de bord utilisateur** — stats, historique, progression
-- [ ] **Compléter les caractères** — tous les Hiragana (46), tout l'alphabet cyrillique
-- [ ] **Spaced repetition** — algorithme de révision espacée (SM-2 ou similaire)
-- [ ] **Amélioration UX mobile** — touch events optimisés, taille canvas responsive
-
-### Priorité moyenne
-- [ ] **OAuth** — Google / GitHub sign-in via Better-Auth
-- [ ] **Katakana** — Ajout du script japonais Katakana
-- [ ] **Kanji basiques** — JLPT N5 (avec KanjiVG)
-- [ ] **Mode révision** — revoir les caractères mal maîtrisés
-- [ ] **Animations UI** — transitions page avec Motion (déjà installé)
-
-### Priorité basse / future
-- [ ] **Multijoueur** — challenge entre utilisateurs (Maps + Chat dans tsconfig aliases)
-- [ ] **Leaderboard** — classement par langue/niveau
-- [ ] **PWA** — installation mobile, offline support
-- [ ] **Son** — retour audio personnalisé par langue
-
-### Dettes techniques
-- [ ] Tests unitaires (`stroke-validator.ts` — critique à tester)
-- [ ] Tests E2E (Playwright) pour le flow d'apprentissage
-- [ ] Migrer `characters.ts` vers DB avec seed script
-- [ ] Compléter `/users/me` endpoint
-- [ ] Ajouter middleware d'auth sur les routes protégées
+- [x] Canvas de dessin avec tracking de traits (pointer events souris + touch)
+- [x] Validation de traits (coverage 70% + direction 30%)
+- [x] Aperçu animé des caractères (SVG path par path)
+- [x] Grille de pratique 3 niveaux (guide → pointillés → vide)
+- [x] Support Hiragana (KanjiVG) + Cyrillique (paths manuels)
+- [x] API Next.js `/api/characters` et `/api/kanjivg`
+- [x] Schéma Prisma complet (Language, Course, Character, UserProgress SM-2, PracticeSession, StrokeAttempt, UserStats)
+- [x] Composants UI (Button variants, palette)
 
 ---
 
-*Devbook généré le 13/03/2026 — Sen: Learn the Line*
+## 15. Planning semaine par semaine
+
+> **Aujourd'hui**: 25/03/2026 | **Deadline projet**: 05/06/2026 | **Soutenance**: 19/06/2026
+> Durée restante : ~10 semaines de dev + 2 semaines de préparation soutenance.
+
+---
+
+### Semaine 1 — 25/03 → 30/03 | **Seed & Migration des données**
+
+Objectif: Les données de caractères quittent `characters.ts` et vivent en base. C'est le prérequis de tout le reste.
+
+- [ ] **Seed script** (`packages/database/prisma/seed.ts`)
+  - Créer les entrées `Language` : `{ code: "ja-JP", name: "Japonais", script: "Hiragana" }` et `{ code: "ru-RU", name: "Russe", script: "Cyrillique" }`
+  - Créer les `Course` par niveau (courseLevel 1, 2…)
+  - Importer tous les caractères de `characters.ts` → insérer `Character` avec `svgPaths` sérialisé en JSON
+  - Rendre le seed idempotent (`upsert` sur l'id)
+- [ ] **Compléter les Hiragana** — les 46 caractères de base (あ〜ん) via `fetch-kanjivg.js`
+  - Script batch pour récupérer tous les paths en une commande
+  - Vérifier que les paths passent bien la validation
+- [ ] **Compléter le Cyrillique** — les 33 lettres (А〜Я) avec paths manuels
+- [ ] **Brancher l'API `/api/characters` sur Prisma** au lieu du fichier statique
+  - `GET /api/characters?lang=japanese&level=1` → requête Prisma filtrée
+  - Supprimer `apps/web/src/data/characters.ts` une fois le seed validé
+- [ ] **Tests manuels** seed + API avec Prisma Studio
+
+---
+
+### Semaine 2 — 31/03 → 06/04 | **Routes API Backend (Hono)**
+
+Objectif: Le serveur Hono expose des routes RESTful pour la progression et les sessions.
+
+- [ ] **`GET /users/me`** — compléter l'endpoint skeleton
+  - Auth middleware : vérifier la session Better-Auth, sinon `401`
+  - Retourner `{ id, name, email, image, createdAt }`
+- [ ] **Middleware d'authentification réutilisable** `apps/server/src/middleware/auth.ts`
+  - Extraire la session depuis le cookie, injecter `ctx.user` dans le context Hono
+  - Appliquer sur toutes les routes protégées
+- [ ] **Routes progression**
+  - `GET  /api/progress?lang=ja-JP` → retourne `UserProgress[]` de l'utilisateur courant
+  - `GET  /api/progress/:characterId` → progression d'un caractère précis
+  - `POST /api/progress/:characterId` → créer/mettre à jour `UserProgress` (score, SM-2)
+- [ ] **Routes sessions d'entraînement**
+  - `POST /api/sessions` → démarrer une `PracticeSession` (retourne `sessionId`)
+  - `PATCH /api/sessions/:id` → compléter la session (score global, totalChars, correctCount)
+- [ ] **Routes tentatives**
+  - `POST /api/sessions/:sessionId/attempts` → enregistrer un `StrokeAttempt`
+- [ ] **Validation des inputs** avec Valibot sur toutes les routes POST/PATCH
+
+---
+
+### Semaine 3 — 07/04 → 13/04 | **Connexion Frontend ↔ Backend**
+
+Objectif: La progression utilisateur est persistée en temps réel pendant les sessions d'entraînement.
+
+- [ ] **Hook `usePracticeSession`**
+  - Ouvre une session au démarrage (`POST /api/sessions`)
+  - Envoie chaque `StrokeAttempt` après validation (`POST /api/sessions/:id/attempts`)
+  - Clôture la session à la fin (`PATCH /api/sessions/:id`)
+- [ ] **Hook `useProgress(characterId)`**
+  - Fetch `UserProgress` depuis l'API au chargement de la page learn
+  - Mise à jour optimiste via TanStack Query après chaque tentative validée
+- [ ] **SM-2 côté serveur** dans `POST /api/progress/:characterId`
+  - Implémenter l'algorithme SM-2 : calcul `interval`, `easeFactor`, `nextReview`
+  - Input: score (0-100) → grade SM-2 (0-5)
+  - Incrémenter `successCount`/`failCount`
+- [ ] **Progression `practiceLevel`** — avancer de 0→1→2 quand le score dépasse un seuil (ex: 70%)
+  - Synchroniser l'état Zustand local avec la DB
+- [ ] **Persistance du `practiceLevel`** au rechargement — charger depuis l'API au lieu de partir à 0
+
+---
+
+### Semaine 4 — 14/04 → 20/04 | **Dashboard Utilisateur**
+
+Objectif: L'utilisateur peut voir sa progression globale et par langue.
+
+- [ ] **Page `/dashboard`** (protégée par auth)
+  - Stats globales : nb caractères maîtrisés, taux de réussite, streak
+  - Progression par langue (barre de progression Hiragana, Cyrillique)
+  - Historique des dernières sessions
+- [ ] **Composant `ProgressCard`** — un caractère + son niveau de maîtrise (0-3 étoiles)
+- [ ] **Composant `StatsOverview`** — cartes KPIs (sessions totales, temps pratiqué, meilleur score)
+- [ ] **Page `/profile`** — infos compte + avatar + option déconnexion
+- [ ] **Hook `useUserStats`** — fetch stats agrégées depuis l'API
+- [ ] **Route `GET /api/stats`** côté serveur — agréger les données (requêtes Prisma groupées)
+- [ ] **Navigation** — ajouter le lien Dashboard dans le header/nav principal
+
+---
+
+### Semaine 5 — 21/04 → 27/04 | **Mode Révision (Spaced Repetition)**
+
+Objectif: L'utilisateur peut réviser les caractères dus selon l'algorithme SM-2.
+
+- [ ] **Page `/revision`** — liste les caractères dont `nextReview <= now()`
+  - Tri par urgence (nextReview le plus ancien en premier)
+  - Indicateur "X caractères à réviser aujourd'hui"
+- [ ] **Route `GET /api/revision`** — `UserProgress` où `nextReview <= now()` pour l'utilisateur
+- [ ] **Mode révision dans `LearnClient`** — distinguer mode "apprentissage" vs mode "révision"
+  - En révision : commencer directement au `practiceLevel` actuel (pas de redémarrage à 0)
+  - Après succès : mettre à jour SM-2 et retirer de la file de révision
+- [ ] **Reminder visuel** — badge dans la nav si des révisions sont dues
+- [ ] **Composant `RevisionQueue`** — liste les caractères dus avec leur prochain intervalle
+
+---
+
+### Semaine 6 — 28/04 → 04/05 | **UX Mobile & Polish UI**
+
+Objectif: L'app est fluide sur mobile et agréable à utiliser.
+
+- [ ] **Canvas responsive** — taille du canvas calculée dynamiquement selon `window.innerWidth`
+  - Min 280px, max 400px, centré
+  - Recalcul sur resize (ResizeObserver)
+- [ ] **Touch events optimisés** — `touch-action: none` pour éviter le scroll pendant le dessin
+  - Empêcher le zoom pinch sur le canvas
+  - Multi-touch : ignorer les doigts supplémentaires
+- [ ] **Transitions de page** avec Motion (Framer Motion / `motion` package)
+  - Slide entre les caractères
+  - Fade in/out des pages
+- [ ] **Feedback haptique** (Vibration API) — courte vibration sur succès/échec (mobile)
+- [ ] **Animations de validation** — animation célébration quand un caractère est maîtrisé
+- [ ] **Loading states** — skeletons sur les pages qui fetchent des données
+- [ ] **Empty states** — messages utiles quand pas de données (0 révisions, 0 caractères)
+- [ ] **Review UI audit** — passer l'app en mode mobile (DevTools) et noter les problèmes
+
+---
+
+### Semaine 7 — 05/05 → 11/05 | **Tests & Qualité**
+
+Objectif: Les parties critiques sont testées, le code est sûr pour la soutenance.
+
+- [ ] **Tests unitaires `stroke-validator.ts`** (Bun test)
+  - Cas nominal : trait droit, trait courbe
+  - Cas limites : trait vide, trait très court, direction inverse
+  - Tester chaque score individuel (coverage, direction)
+- [ ] **Tests unitaires algorithme SM-2** dans `apps/server`
+  - Grade 0, 3, 5 → vérifier interval/easeFactor résultants
+- [ ] **Tests d'intégration API** (Hono + Prisma in-memory ou SQLite test)
+  - `POST /api/progress/:characterId` — vérifier la mise à jour SM-2
+  - `GET /api/revision` — vérifier le filtre `nextReview`
+- [ ] **TypeScript strict** — `npx tsc --noEmit` sans erreur sur `apps/web` et `apps/server`
+- [ ] **ESLint clean** — `bun run lint` sans warning sur les fichiers modifiés
+- [ ] **Audit sécurité basique** — pas de secrets en clair, routes protégées par le middleware auth
+
+---
+
+### Semaine 8 — 12/05 → 18/05 | **Contenu & Fonctionnalités Secondaires**
+
+Objectif: Enrichir le contenu et ajouter les features de valeur pour la démo.
+
+- [ ] **Katakana** — les 46 caractères via KanjiVG + seed
+  - Nouveau `Language` : `{ code: "ja-JP-katakana", script: "Katakana" }`
+  - Vérifier que la validation fonctionne aussi bien qu'en Hiragana
+- [ ] **OAuth Google** via Better-Auth
+  - Config `packages/auth` : ajouter le provider Google
+  - Bouton "Continuer avec Google" sur les pages sign-in/sign-up
+  - Variables d'env `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- [ ] **Kanji basiques JLPT N5** (optionnel si le temps le permet)
+  - 10-15 Kanji essentiels : 一 二 三 日 月 山 川 田 人 口
+  - Via KanjiVG (même pipeline que Hiragana)
+- [ ] **Page d'accueil améliorée** — présenter les langues disponibles avec stats (nb caractères, nb apprenants)
+
+---
+
+### Semaine 9 — 19/05 → 25/05 | **PWA & Performances**
+
+Objectif: L'app peut s'installer sur mobile et charge rapidement.
+
+- [ ] **PWA** — `next-pwa` ou config manuelle `manifest.json` + service worker
+  - `manifest.json` : icônes, couleurs, `display: standalone`
+  - Service worker : cache des assets statiques
+  - Bouton "Installer l'app" sur mobile
+- [ ] **Offline partiel** — la page d'apprentissage fonctionne sans réseau si les données sont en cache (TanStack Query `staleTime` élevé)
+- [ ] **Optimisation images/SVG** — inline les SVG des caractères pour éviter les requêtes réseau
+- [ ] **Core Web Vitals** — auditer avec Lighthouse, corriger les LCP/CLS/FID critiques
+- [ ] **Optimistic updates** — toutes les mutations TanStack Query ont un `onMutate` pour une UX instantanée
+
+---
+
+### Semaine 10 — 26/05 → 01/06 | **Finitions & Démo**
+
+Objectif: L'app est demo-ready. Tout ce qui a été fait fonctionne de bout en bout.
+
+- [ ] **Smoke tests manuels** du flow complet (inscription → cours → révision → dashboard)
+- [ ] **Fix bugs** découverts pendant les tests
+- [ ] **Contenu de la démo** — compte démo avec données pré-remplies (seed de démo)
+- [ ] **README** — mettre à jour avec instructions de lancement, captures d'écran
+- [ ] **Variables d'env** — documenter toutes les variables requises pour la prod
+- [ ] **Deploy preview** — déployer sur Vercel (web) + Railway/Fly.io (server) pour la démo live
+
+---
+
+### Semaine 11 — 02/06 → 05/06 | **Buffer & Deadline**
+
+- [ ] Corrections de dernière minute
+- [ ] Gel du code (feature freeze)
+- [ ] Tag de release `v1.0.0`
+
+---
+
+### Semaine 12-13 — 06/06 → 19/06 | **Préparation Soutenance**
+
+- [ ] Slides de présentation (stack, architecture, démo live, challenges)
+- [ ] Script de démo — définir le parcours utilisateur à montrer
+- [ ] Anticiper les questions du jury (choix tech, SM-2, validation de traits, monorepo)
+- [ ] Répétitions
+
+---
+
+### Dettes techniques (à traiter au fil des semaines)
+
+- [ ] Tests unitaires `stroke-validator.ts` → Semaine 7
+- [ ] Migrer `characters.ts` vers DB → Semaine 1
+- [ ] Compléter `/users/me` → Semaine 2
+- [ ] Middleware d'auth sur routes protégées → Semaine 2
+- [ ] TypeScript strict sans erreur → Semaine 7
+
+---
+
+*Devbook mis à jour le 25/03/2026 — Sen: Learn the Line*
+
+
