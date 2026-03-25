@@ -26,8 +26,7 @@ model User {
   progress  UserProgress[]
   sessions2 PracticeSession[]
 
-  stats     String?
-  userstats UserStats? @relation(fields: [stats], references: [id], onDelete: Cascade)
+  stats String?
 
   @@map("user")
 }
