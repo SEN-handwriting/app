@@ -19,14 +19,24 @@ export function Navbar() {
         <ul className="flex items-center justify-between gap-10">
           <div className="flex items-center gap-16">
             <li>
-              <Link href="/" className="flex items-center gap-2">
-                Turbo starter
+              <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+                Sen
               </Link>
             </li>
 
-            <div className="flex items-center gap-4 rounded-xl">
-              <li></li>
-            </div>
+            {data?.user && (
+              <div className="flex items-center gap-1 rounded-xl">
+                <li>
+                  <NavbarLink href="/langue">Langues</NavbarLink>
+                </li>
+                <li>
+                  <NavbarLink href="/mes-cours">Mes cours</NavbarLink>
+                </li>
+                <li>
+                  <NavbarLink href="/stats">Stats</NavbarLink>
+                </li>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">

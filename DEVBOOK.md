@@ -292,6 +292,120 @@ Schémas Valibot pour les formulaires d'auth:
 
 ## 6. Base de données
 
+### MCD — Modèle Conceptuel de Données
+
+Le schéma est organisé en **5 zones fonctionnelles** :
+
+#### Zones
+
+| Zone | Couleur | Entités |
+|---|---|---|
+| 🔐 Auth | Bleu | `User`, `Session`, `Account`, `Verification`, `UserStats` |
+| 📚 Contenu Caractères | Vert | `Language`, `Course`, `Character` |
+| 💬 Contenu Phrases | Violet | `Lesson`, `Sentence` |
+| 🧠 SM-2 / Progression | Amber | `UserProgress`, `SentenceProgress` |
+| 🎯 Sessions | Coral | `PracticeSession`, `StrokeAttempt` |
+
+#### Schéma complet
+
+```
+🔐 AUTH
+┌─────────────────┐     1:N    ┌──────────────┐     1:N    ┌──────────────────────┐
+│     User        │ ─────────► │   Session    │            │       Account        │
+│  id (PK·cuid)   │            │  id (PK)     │            │  id (PK)             │
+│  name           │ ─────────► │  token ★UNIQ │            │  accountId           │
+│  email ★UNIQUE  │   1:N      │  expiresAt   │            │  providerId          │
+│  emailVerified  │            │  userId (FK) │            │  password ?          │
+│  image ?        │            └──────────────┘            │  accessToken ?       │
+│  createdAt      │                                        │  userId (FK)  ★INDEX │
+│  updatedAt      │ ─────────────────────────────────────► └──────────────────────┘
+│  stats? (FK)    │   1:N
+│                 │ ──► UserStats / UserProgress / SentenceProgress / PracticeSession
+└─────────────────┘
+
+📚 CONTENU CARACTÈRES
+┌──────────────────┐   1:N   ┌──────────────────┐  0..1:N  ┌─────────────────────────┐
+│    Language      │ ──────► │     Course       │ ───────► │       Character         │
+│  id (PK·cuid)    │         │  id (PK·cuid)    │          │  id (PK) ex: hiragana-あ│
+│  code ★UNIQUE    │         │  level : Int     │          │  label                  │
+│  name            │         │  title           │          │  audioText              │
+│  script ?        │ ──────► │  description ?   │          │  strokeCount ?          │
+│  isActive        │   1:N   │  languageId (FK) │          │  languageLevel ?        │
+│  createdAt       │         │  ★UNIQUE(langId, │          │  courseLevel (dénorm.)  │
+└──────────────────┘         │    level)        │          │  svgPaths (JSON)        │
+                             └──────────────────┘          │  meanings ? (JSON)      │
+                                                           │  romanization ? (JSON)  │
+                                                           │  readings ? (JSON)      │
+                                                           │  languageId (FK)        │
+                                                           │  courseId ? (FK)        │
+                                                           └─────────────────────────┘
+
+💬 CONTENU PHRASES
+┌──────────────────┐  1:N   ┌──────────────────┐  1:N   ┌─────────────────────────┐
+│     Course       │ ─────► │     Lesson       │ ─────► │       Sentence          │
+│  (voir ci-dessus)│        │  id (PK·cuid)    │        │  id (PK·cuid)           │
+└──────────────────┘        │  title           │        │  text (langue cible)    │
+                            │  description ?   │        │  translation (fr)       │
+┌──────────────────┐  1:N   │  order : Int     │        │  romanization ?         │
+│    Language      │ ─────► │  requiredLevel ? │        │  audioText ?            │
+└──────────────────┘        │  courseId (FK)   │        │  lessonId (FK)          │
+                            └──────────────────┘        │  languageId (FK)        │
+                                                        └─────────────────────────┘
+
+🧠 PROGRESSION (SM-2)
+┌──────────────────────────────────────────────────────────────┐
+│  UserProgress               SentenceProgress                 │
+│  id (PK·cuid)               id (PK·cuid)                     │
+│  ★UNIQUE(userId,charId)     ★UNIQUE(userId,sentenceId)       │
+│  ★INDEX(userId,nextReview)  ★INDEX(userId,nextReview)        │
+│  practiceLevel 0|1|2        masteryLevel 0|1|2               │
+│  ─── SM-2 ──────────────    ─── SM-2 ──────────────          │
+│  repetitions                repetitions                       │
+│  easeFactor (1.3–2.5)       easeFactor                       │
+│  interval (jours)           interval                         │
+│  nextReview ★INDEX          nextReview ★INDEX                │
+│  successCount / failCount   successCount / failCount         │
+│  lastPracticed ?            userId (FK)  characterId (FK)    │
+│  userId (FK) charId (FK)    sentenceId (FK)                  │
+└──────────────────────────────────────────────────────────────┘
+
+🎯 SESSIONS
+┌───────────────────────┐   1:N   ┌──────────────────────────────┐
+│   PracticeSession     │ ──────► │       StrokeAttempt          │
+│  id (PK·cuid)         │         │  id (PK·cuid)                │
+│  startedAt            │         │  score : Float (0-100)       │
+│  completedAt ?        │         │  isSuccess : Boolean         │
+│  totalChars           │         │  strokeData ? (JSON points)  │
+│  correctCount         │         │  feedback ? (JSON métriques) │
+│  score ?              │         │  attemptedAt                 │
+│  userId (FK)          │         │  sessionId (FK)              │
+│  languageId (FK)      │         │  characterId (FK)            │
+└───────────────────────┘         └──────────────────────────────┘
+```
+
+#### Relations clés
+
+| Relation | Cardinalité | Cascade |
+|---|---|---|
+| User → Session | 1:N | DELETE |
+| User → Account | 1:N | DELETE |
+| User → UserStats | 1:N | DELETE |
+| User → UserProgress | 1:N | DELETE |
+| User → SentenceProgress | 1:N | DELETE |
+| User → PracticeSession | 1:N | DELETE |
+| Language → Course | 1:N | — |
+| Language → Character | 1:N | — |
+| Language → Sentence | 1:N | — |
+| Course → Lesson | 1:N | — |
+| Course → Character | 0..1:N | — |
+| Lesson → Sentence | 1:N | — |
+| Character → UserProgress | 1:N | DELETE |
+| Character → StrokeAttempt | 1:N | DELETE |
+| Sentence → SentenceProgress | 1:N | DELETE |
+| PracticeSession → StrokeAttempt | 1:N | DELETE |
+
+> **Note :** Le fichier draw.io complet (`sen_mcd_v4.drawio`) est disponible dans les livrables du projet. Il contient toutes les entités colorées par zone fonctionnelle avec les contraintes détaillées (UNIQUE, INDEX, CASCADE).
+
 ### Schéma Prisma (SQLite)
 
 ```prisma
@@ -301,32 +415,54 @@ model Session { id, token, userId, expiresAt }
 model Account { ... }       // OAuth / credentials
 model Verification { ... }  // Email verification tokens
 
-// ─── Contenu ─────────────────────────────────────────────────
-model Language { id, code, name, script, characters[], courses[] }
-model Course    { id, languageId, level, title, characters[] }
-model Character { id, label, audioText, svgPaths(JSON), strokeCount, ... }
+// ─── Contenu Caractères ───────────────────────────────────────
+model Language { id, code, name, script, characters[], courses[], sentences[] }
+model Course    { id, languageId, level, title, characters[], lessons[] }
+model Character { id, label, audioText, svgPaths(JSON), strokeCount, languageLevel, ... }
+
+// ─── Contenu Phrases ─────────────────────────────────────────
+model Lesson   { id, courseId, title, order, requiredLevel?, sentences[] }
+model Sentence { id, lessonId, languageId, text, translation, romanization?, audioText? }
 
 // ─── Progression (SM-2) ──────────────────────────────────────
 model UserProgress {
-  // repetitions, easeFactor, interval (SM-2)
   // practiceLevel 0→1→2
+  // repetitions, easeFactor, interval (SM-2)
   // successCount, failCount, nextReview
+}
+model SentenceProgress {
+  // masteryLevel 0→1→2 (lecture, compréhension, production)
+  // mêmes champs SM-2 que UserProgress
 }
 model PracticeSession { id, userId, languageId, startedAt, score, attempts[] }
 model StrokeAttempt   { id, sessionId, characterId, score, feedback(JSON), isSuccess }
 model UserStats       { id, userId, key, value }  // Stats agrégées clé/valeur
 ```
 
-> **Important**: Le schéma DB est complet. Il reste à brancher le seed script (`characters.ts` → DB) et à implémenter les routes API côté serveur.
+### Conventions `languageLevel`
+
+Le champ `languageLevel` sur `Character` est générique et s'adapte au référentiel de chaque langue :
+
+| Langue | Référentiel | Valeurs |
+|---|---|---|
+| Japonais (`ja-JP`) | JLPT | N5, N4, N3, N2, N1 |
+| Russe (`ru-RU`) | CECRL | A1, A2, B1, B2, C1 |
+| Chinois (`zh-CN`) | HSK | HSK1, HSK2, HSK3, HSK4, HSK5, HSK6 |
+| Arabe (`ar-SA`) | CECRL | A1, A2, B1, B2, C1 |
+| Coréen (`ko-KR`) | TOPIK | TOPIK1, TOPIK2, TOPIK3 |
 
 ### État des modèles
+
 | Modèle | Schéma | Routes API | Frontend |
 |---|---|---|---|
 | User / Session / Account | ✅ | ✅ Better-Auth | ✅ |
 | Language | ✅ | ❌ | ❌ |
 | Course | ✅ | ❌ | ❌ |
 | Character | ✅ | ⚠️ fichier statique | ⚠️ |
+| Lesson | ⬜ À créer | ❌ | ❌ |
+| Sentence | ⬜ À créer | ❌ | ❌ |
 | UserProgress | ✅ | ❌ | ❌ |
+| SentenceProgress | ⬜ À créer | ❌ | ❌ |
 | PracticeSession | ✅ | ❌ | ❌ |
 | StrokeAttempt | ✅ | ❌ | ❌ |
 | UserStats | ✅ | ❌ | ❌ |
@@ -449,7 +585,7 @@ interface Character {
     onyomi?: string[];
     kunyomi?: string[];
   };
-  jlpt?: string;           // "N5" | "N4" | ...
+  languageLevel?: string;  // N5/N4/N3 (JLPT), A1/A2 (CECRL), HSK1… (HSK) — générique
   courseLevel: number;     // 1, 2, 3... (groupe dans les cours)
 }
 ```
@@ -531,7 +667,7 @@ Retourne les infos de l'utilisateur courant.
 
 ## 11. Flows utilisateur
 
-### Flow d'apprentissage (core loop)
+### Flow d'apprentissage — Caractères (core loop)
 
 ```
 Accueil (/)
@@ -556,8 +692,36 @@ Accueil (/)
 │  Niveau 2: guide pointillé      │
 │  Niveau 3: grille vide          │
 └─────────────────────────────────┘
-    ↓ Caractère maîtrisé
+    ↓ Caractère maîtrisé (practiceLevel 2 → SM-2)
 Caractère suivant (ou fin du cours)
+```
+
+### Flow d'apprentissage — Phrases (après maîtrise des caractères)
+
+```
+Cours maîtrisé (tous les caractères à practiceLevel 2)
+    ↓ Leçons disponibles débloquées
+/lecons/[lessonId]
+    ↓
+┌─────────────────────────────────┐
+│  Phrase affichée                │
+│  → Texte en langue cible        │
+│  → Bouton audio (TTS)           │
+│  → Romanisation (optionnelle)   │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  masteryLevel 0 : lecture       │
+│  → Affichage + traduction       │
+│                                  │
+│  masteryLevel 1 : compréhension │
+│  → QCM / association            │
+│                                  │
+│  masteryLevel 2 : production    │
+│  → Saisie libre / tracé         │
+└─────────────────────────────────┘
+    ↓ Phrase maîtrisée → SentenceProgress SM-2
+Phrase suivante (ou fin de leçon)
 ```
 
 ### Flow d'authentification
@@ -691,34 +855,23 @@ Objectif: Les données de caractères quittent `characters.ts` et vivent en base
   - Importer tous les caractères de `characters.ts` → insérer `Character` avec `svgPaths` sérialisé en JSON
   - Rendre le seed idempotent (`upsert` sur l'id)
 - [ ] **Compléter les Hiragana** — les 46 caractères de base (あ〜ん) via `fetch-kanjivg.js`
-  - Script batch pour récupérer tous les paths en une commande
-  - Vérifier que les paths passent bien la validation
 - [ ] **Compléter le Cyrillique** — les 33 lettres (А〜Я) avec paths manuels
 - [ ] **Brancher l'API `/api/characters` sur Prisma** au lieu du fichier statique
-  - `GET /api/characters?lang=japanese&level=1` → requête Prisma filtrée
-  - Supprimer `apps/web/src/data/characters.ts` une fois le seed validé
+- [ ] **Ajouter les modèles Prisma** `Lesson`, `Sentence`, `SentenceProgress` au schéma
 - [ ] **Tests manuels** seed + API avec Prisma Studio
 
 ---
 
 ### Semaine 2 — 31/03 → 06/04 | **Routes API Backend (Hono)**
 
-Objectif: Le serveur Hono expose des routes RESTful pour la progression et les sessions.
-
 - [ ] **`GET /users/me`** — compléter l'endpoint skeleton
-  - Auth middleware : vérifier la session Better-Auth, sinon `401`
-  - Retourner `{ id, name, email, image, createdAt }`
 - [ ] **Middleware d'authentification réutilisable** `apps/server/src/middleware/auth.ts`
-  - Extraire la session depuis le cookie, injecter `ctx.user` dans le context Hono
-  - Appliquer sur toutes les routes protégées
-- [ ] **Routes progression**
-  - `GET  /api/progress?lang=ja-JP` → retourne `UserProgress[]` de l'utilisateur courant
-  - `GET  /api/progress/:characterId` → progression d'un caractère précis
-  - `POST /api/progress/:characterId` → créer/mettre à jour `UserProgress` (score, SM-2)
+- [ ] **Routes progression caractères**
+  - `GET  /api/progress?lang=ja-JP` → retourne `UserProgress[]`
+  - `POST /api/progress/:characterId` → créer/mettre à jour (SM-2)
 - [ ] **Routes sessions d'entraînement**
-  - `POST /api/sessions` → démarrer une `PracticeSession` (retourne `sessionId`)
-  - `PATCH /api/sessions/:id` → compléter la session (score global, totalChars, correctCount)
-- [ ] **Routes tentatives**
+  - `POST /api/sessions` → démarrer une `PracticeSession`
+  - `PATCH /api/sessions/:id` → compléter la session
   - `POST /api/sessions/:sessionId/attempts` → enregistrer un `StrokeAttempt`
 - [ ] **Validation des inputs** avec Valibot sur toutes les routes POST/PATCH
 
@@ -726,141 +879,77 @@ Objectif: Le serveur Hono expose des routes RESTful pour la progression et les s
 
 ### Semaine 3 — 07/04 → 13/04 | **Connexion Frontend ↔ Backend**
 
-Objectif: La progression utilisateur est persistée en temps réel pendant les sessions d'entraînement.
-
-- [ ] **Hook `usePracticeSession`**
-  - Ouvre une session au démarrage (`POST /api/sessions`)
-  - Envoie chaque `StrokeAttempt` après validation (`POST /api/sessions/:id/attempts`)
-  - Clôture la session à la fin (`PATCH /api/sessions/:id`)
-- [ ] **Hook `useProgress(characterId)`**
-  - Fetch `UserProgress` depuis l'API au chargement de la page learn
-  - Mise à jour optimiste via TanStack Query après chaque tentative validée
+- [ ] **Hook `usePracticeSession`** — ouvre, peuple, clôture une session
+- [ ] **Hook `useProgress(characterId)`** — fetch + mise à jour optimiste
 - [ ] **SM-2 côté serveur** dans `POST /api/progress/:characterId`
-  - Implémenter l'algorithme SM-2 : calcul `interval`, `easeFactor`, `nextReview`
-  - Input: score (0-100) → grade SM-2 (0-5)
-  - Incrémenter `successCount`/`failCount`
-- [ ] **Progression `practiceLevel`** — avancer de 0→1→2 quand le score dépasse un seuil (ex: 70%)
-  - Synchroniser l'état Zustand local avec la DB
-- [ ] **Persistance du `practiceLevel`** au rechargement — charger depuis l'API au lieu de partir à 0
+- [ ] **Progression `practiceLevel`** synchronisée DB ↔ état Zustand
 
 ---
 
 ### Semaine 4 — 14/04 → 20/04 | **Dashboard Utilisateur**
 
-Objectif: L'utilisateur peut voir sa progression globale et par langue.
-
-- [ ] **Page `/dashboard`** (protégée par auth)
-  - Stats globales : nb caractères maîtrisés, taux de réussite, streak
-  - Progression par langue (barre de progression Hiragana, Cyrillique)
-  - Historique des dernières sessions
-- [ ] **Composant `ProgressCard`** — un caractère + son niveau de maîtrise (0-3 étoiles)
-- [ ] **Composant `StatsOverview`** — cartes KPIs (sessions totales, temps pratiqué, meilleur score)
-- [ ] **Page `/profile`** — infos compte + avatar + option déconnexion
-- [ ] **Hook `useUserStats`** — fetch stats agrégées depuis l'API
-- [ ] **Route `GET /api/stats`** côté serveur — agréger les données (requêtes Prisma groupées)
-- [ ] **Navigation** — ajouter le lien Dashboard dans le header/nav principal
+- [ ] **Page `/dashboard`** — stats globales, progression par langue
+- [ ] **Composant `ProgressCard`** — caractère + niveau de maîtrise (0-3 étoiles)
+- [ ] **Composant `StatsOverview`** — KPIs (sessions totales, streak, meilleur score)
+- [ ] **Page `/profile`** — infos compte + avatar + déconnexion
+- [ ] **Route `GET /api/stats`** — agréger les données
 
 ---
 
 ### Semaine 5 — 21/04 → 27/04 | **Mode Révision (Spaced Repetition)**
 
-Objectif: L'utilisateur peut réviser les caractères dus selon l'algorithme SM-2.
-
-- [ ] **Page `/revision`** — liste les caractères dont `nextReview <= now()`
-  - Tri par urgence (nextReview le plus ancien en premier)
-  - Indicateur "X caractères à réviser aujourd'hui"
-- [ ] **Route `GET /api/revision`** — `UserProgress` où `nextReview <= now()` pour l'utilisateur
-- [ ] **Mode révision dans `LearnClient`** — distinguer mode "apprentissage" vs mode "révision"
-  - En révision : commencer directement au `practiceLevel` actuel (pas de redémarrage à 0)
-  - Après succès : mettre à jour SM-2 et retirer de la file de révision
+- [ ] **Page `/revision`** — liste les caractères et phrases dont `nextReview <= now()`
+- [ ] **Route `GET /api/revision`** — `UserProgress` + `SentenceProgress` dus
+- [ ] **Mode révision dans `LearnClient`** — partir au `practiceLevel` actuel
 - [ ] **Reminder visuel** — badge dans la nav si des révisions sont dues
-- [ ] **Composant `RevisionQueue`** — liste les caractères dus avec leur prochain intervalle
 
 ---
 
-### Semaine 6 — 28/04 → 04/05 | **UX Mobile & Polish UI**
+### Semaine 6 — 28/04 → 04/05 | **Leçons & Phrases**
 
-Objectif: L'app est fluide sur mobile et agréable à utiliser.
-
-- [ ] **Canvas responsive** — taille du canvas calculée dynamiquement selon `window.innerWidth`
-  - Min 280px, max 400px, centré
-  - Recalcul sur resize (ResizeObserver)
-- [ ] **Touch events optimisés** — `touch-action: none` pour éviter le scroll pendant le dessin
-  - Empêcher le zoom pinch sur le canvas
-  - Multi-touch : ignorer les doigts supplémentaires
-- [ ] **Transitions de page** avec Motion (Framer Motion / `motion` package)
-  - Slide entre les caractères
-  - Fade in/out des pages
-- [ ] **Feedback haptique** (Vibration API) — courte vibration sur succès/échec (mobile)
-- [ ] **Animations de validation** — animation célébration quand un caractère est maîtrisé
-- [ ] **Loading states** — skeletons sur les pages qui fetchent des données
-- [ ] **Empty states** — messages utiles quand pas de données (0 révisions, 0 caractères)
-- [ ] **Review UI audit** — passer l'app en mode mobile (DevTools) et noter les problèmes
+- [ ] **Modèles Prisma** `Lesson` + `Sentence` + `SentenceProgress` seedés
+- [ ] **Page `/lecons/[lessonId]`** — affichage d'une phrase avec ses 3 niveaux de maîtrise
+- [ ] **Routes API** `GET /api/lessons`, `POST /api/sentence-progress/:sentenceId`
+- [ ] **Débloquage des leçons** — conditonné par la maîtrise des caractères du cours
 
 ---
 
-### Semaine 7 — 05/05 → 11/05 | **Tests & Qualité**
+### Semaine 7 — 05/05 → 11/05 | **UX Mobile & Polish UI**
 
-Objectif: Les parties critiques sont testées, le code est sûr pour la soutenance.
+- [ ] **Canvas responsive** — taille dynamique selon `window.innerWidth`
+- [ ] **Touch events optimisés** — `touch-action: none`, anti-zoom
+- [ ] **Transitions de page** avec Motion
+- [ ] **Loading states** — skeletons
+- [ ] **Empty states** — 0 révisions, 0 caractères, 0 phrases
+
+---
+
+### Semaine 8 — 12/05 → 18/05 | **Tests & Qualité**
 
 - [ ] **Tests unitaires `stroke-validator.ts`** (Bun test)
-  - Cas nominal : trait droit, trait courbe
-  - Cas limites : trait vide, trait très court, direction inverse
-  - Tester chaque score individuel (coverage, direction)
-- [ ] **Tests unitaires algorithme SM-2** dans `apps/server`
-  - Grade 0, 3, 5 → vérifier interval/easeFactor résultants
-- [ ] **Tests d'intégration API** (Hono + Prisma in-memory ou SQLite test)
-  - `POST /api/progress/:characterId` — vérifier la mise à jour SM-2
-  - `GET /api/revision` — vérifier le filtre `nextReview`
-- [ ] **TypeScript strict** — `npx tsc --noEmit` sans erreur sur `apps/web` et `apps/server`
-- [ ] **ESLint clean** — `bun run lint` sans warning sur les fichiers modifiés
-- [ ] **Audit sécurité basique** — pas de secrets en clair, routes protégées par le middleware auth
+- [ ] **Tests unitaires algorithme SM-2**
+- [ ] **Tests d'intégration API** (Hono + Prisma)
+- [ ] **TypeScript strict** — `npx tsc --noEmit` sans erreur
+- [ ] **ESLint clean** — `bun run lint` sans warning
 
 ---
 
-### Semaine 8 — 12/05 → 18/05 | **Contenu & Fonctionnalités Secondaires**
-
-Objectif: Enrichir le contenu et ajouter les features de valeur pour la démo.
+### Semaine 9 — 19/05 → 25/05 | **Contenu & PWA**
 
 - [ ] **Katakana** — les 46 caractères via KanjiVG + seed
-  - Nouveau `Language` : `{ code: "ja-JP-katakana", script: "Katakana" }`
-  - Vérifier que la validation fonctionne aussi bien qu'en Hiragana
-- [ ] **OAuth Google** via Better-Auth
-  - Config `packages/auth` : ajouter le provider Google
-  - Bouton "Continuer avec Google" sur les pages sign-in/sign-up
-  - Variables d'env `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-- [ ] **Kanji basiques JLPT N5** (optionnel si le temps le permet)
-  - 10-15 Kanji essentiels : 一 二 三 日 月 山 川 田 人 口
-  - Via KanjiVG (même pipeline que Hiragana)
-- [ ] **Page d'accueil améliorée** — présenter les langues disponibles avec stats (nb caractères, nb apprenants)
-
----
-
-### Semaine 9 — 19/05 → 25/05 | **PWA & Performances**
-
-Objectif: L'app peut s'installer sur mobile et charge rapidement.
-
-- [ ] **PWA** — `next-pwa` ou config manuelle `manifest.json` + service worker
-  - `manifest.json` : icônes, couleurs, `display: standalone`
-  - Service worker : cache des assets statiques
-  - Bouton "Installer l'app" sur mobile
-- [ ] **Offline partiel** — la page d'apprentissage fonctionne sans réseau si les données sont en cache (TanStack Query `staleTime` élevé)
-- [ ] **Optimisation images/SVG** — inline les SVG des caractères pour éviter les requêtes réseau
-- [ ] **Core Web Vitals** — auditer avec Lighthouse, corriger les LCP/CLS/FID critiques
-- [ ] **Optimistic updates** — toutes les mutations TanStack Query ont un `onMutate` pour une UX instantanée
+- [ ] **PWA** — `manifest.json` + service worker, icônes
+- [ ] **Offline partiel** — `staleTime` élevé TanStack Query
+- [ ] **Core Web Vitals** — audit Lighthouse
 
 ---
 
 ### Semaine 10 — 26/05 → 01/06 | **Finitions & Démo**
 
-Objectif: L'app est demo-ready. Tout ce qui a été fait fonctionne de bout en bout.
-
-- [ ] **Smoke tests manuels** du flow complet (inscription → cours → révision → dashboard)
+- [ ] **Smoke tests manuels** du flow complet
 - [ ] **Fix bugs** découverts pendant les tests
-- [ ] **Contenu de la démo** — compte démo avec données pré-remplies (seed de démo)
-- [ ] **README** — mettre à jour avec instructions de lancement, captures d'écran
-- [ ] **Variables d'env** — documenter toutes les variables requises pour la prod
-- [ ] **Deploy preview** — déployer sur Vercel (web) + Railway/Fly.io (server) pour la démo live
+- [ ] **Seed de démo** — compte avec données pré-remplies
+- [ ] **README** — mettre à jour + captures d'écran
+- [ ] **Deploy preview** — Vercel (web) + Railway/Fly.io (server)
 
 ---
 
@@ -876,21 +965,20 @@ Objectif: L'app est demo-ready. Tout ce qui a été fait fonctionne de bout en b
 
 - [ ] Slides de présentation (stack, architecture, démo live, challenges)
 - [ ] Script de démo — définir le parcours utilisateur à montrer
-- [ ] Anticiper les questions du jury (choix tech, SM-2, validation de traits, monorepo)
+- [ ] Anticiper les questions du jury (choix tech, SM-2, validation de traits, monorepo, extensibilité langues)
 - [ ] Répétitions
 
 ---
 
 ### Dettes techniques (à traiter au fil des semaines)
 
-- [ ] Tests unitaires `stroke-validator.ts` → Semaine 7
+- [ ] Tests unitaires `stroke-validator.ts` → Semaine 8
 - [ ] Migrer `characters.ts` vers DB → Semaine 1
+- [ ] Ajouter modèles `Lesson` / `Sentence` / `SentenceProgress` → Semaine 1
 - [ ] Compléter `/users/me` → Semaine 2
 - [ ] Middleware d'auth sur routes protégées → Semaine 2
-- [ ] TypeScript strict sans erreur → Semaine 7
+- [ ] TypeScript strict sans erreur → Semaine 8
 
 ---
 
 *Devbook mis à jour le 25/03/2026 — Sen: Learn the Line*
-
-
