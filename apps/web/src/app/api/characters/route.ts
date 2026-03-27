@@ -1,5 +1,36 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { characters } from "../../../data/characters";
+import { db } from "@repo/database/client";
+import type { Character } from "../../../data/characters";
+
+function toCharacter(raw: {
+  id: string;
+  label: string;
+  language: { code: string };
+  audioText: string;
+  svgPaths: string;
+  strokeCount: number | null;
+  meanings: string | null;
+  romaji: string | null;
+  readings: string | null;
+  jlpt: string | null;
+  courseLevel: number;
+}): Character {
+  return {
+    id: raw.id,
+    label: raw.label,
+    lang: raw.language.code,
+    audioText: raw.audioText,
+    svgPaths: JSON.parse(raw.svgPaths) as string[],
+    strokeCount: raw.strokeCount ?? undefined,
+    meanings: raw.meanings ? (JSON.parse(raw.meanings) as string[]) : undefined,
+    romaji: raw.romaji ? (JSON.parse(raw.romaji) as string[]) : undefined,
+    readings: raw.readings
+      ? (JSON.parse(raw.readings) as Character["readings"])
+      : undefined,
+    jlpt: raw.jlpt ?? undefined,
+    courseLevel: raw.courseLevel,
+  };
+}
 
 /**
  * GET /api/characters
@@ -15,11 +46,20 @@ export async function GET(request: NextRequest) {
   const level = searchParams.get("level");
   const id = searchParams.get("id");
 
-  let result = [...characters];
+  try {
+    const rows = await db.character.findMany({
+      where: {
+        ...(lang && { language: { code: lang } }),
+        ...(level && { courseLevel: parseInt(level, 10) }),
+        ...(id && { id }),
+      },
+      include: { language: true },
+      orderBy: [{ courseLevel: "asc" }, { id: "asc" }],
+    });
 
-  if (lang) result = result.filter((c) => c.lang === lang);
-  if (level) result = result.filter((c) => c.courseLevel === parseInt(level));
-  if (id) result = result.filter((c) => c.id === id);
-
-  return NextResponse.json(result);
+    return NextResponse.json(rows.map(toCharacter));
+  } catch (err) {
+    console.error("[GET /api/characters]", err);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
 }
