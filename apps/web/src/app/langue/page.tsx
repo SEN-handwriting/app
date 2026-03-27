@@ -1,30 +1,74 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { characters } from "../../data/characters";
+import { db } from "@repo/database/client";
 
-export default function LanguePage() {
-  // collect available languages from characters
-  const langs = Array.from(new Set(characters.map((c) => c.lang ?? "en-US")));
+const FLAG: Record<string, string> = {
+  "ja-JP": "🇯🇵",
+  "ru-RU": "🇷🇺",
+};
+
+export default async function LanguePage() {
+  const languages = await db.language.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    include: { _count: { select: { characters: true, courses: true } } },
+  });
 
   return (
-    <main className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">Langues</h1>
-      <p className="mb-4">Sélectionnez une langue pour voir les cours disponibles.</p>
+    <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+      <Link
+        href="/"
+        style={{ color: "blue", textDecoration: "underline", fontSize: "16px" }}
+      >
+        ← Accueil
+      </Link>
 
-      <ul className="space-y-2">
-        {langs.map((lang) => (
-          <li key={lang}>
-            <Link href={`/langue/${encodeURIComponent(lang)}/`} className="px-3 py-2 border rounded inline-block">
-              {lang}
-            </Link>
-          </li>
+      <h1 style={{ fontSize: "36px", marginTop: "20px", marginBottom: "8px" }}>
+        Langues disponibles
+      </h1>
+      <p style={{ color: "#666", marginBottom: "32px" }}>
+        Choisissez une langue pour accéder aux cours.
+      </p>
+
+      <div style={{ display: "grid", gap: "16px" }}>
+        {languages.map((lang) => (
+          <Link
+            key={lang.id}
+            href={`/langue/${encodeURIComponent(lang.code)}`}
+            style={{ textDecoration: "none" }}
+          >
+            <div
+              style={{
+                border: "2px solid #000",
+                padding: "24px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "20px",
+              }}
+            >
+              <span style={{ fontSize: "40px" }}>{FLAG[lang.code] ?? "🌐"}</span>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: "22px", color: "#000", margin: 0 }}>
+                  {lang.name}
+                </h2>
+                <p style={{ fontSize: "13px", color: "#666", margin: "4px 0 0 0" }}>
+                  {lang.script} · {lang._count.characters} caractères ·{" "}
+                  {lang._count.courses} cours
+                </p>
+              </div>
+              <span style={{ fontSize: "20px", color: "#999" }}>→</span>
+            </div>
+          </Link>
         ))}
-      </ul>
 
-      <div className="mt-6">
-        <Link href="/course" className="text-sm text-blue-600">Voir les cours</Link>
+        {languages.length === 0 && (
+          <p style={{ color: "#999" }}>
+            Aucune langue disponible.{" "}
+            <code>bun run db:seed</code> pour peupler la base.
+          </p>
+        )}
       </div>
     </main>
   );
