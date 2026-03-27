@@ -1,6 +1,7 @@
-"use client";
-
-import React from "react";
+import { auth } from "@repo/auth/server";
+import { db } from "@repo/database/client";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 const languages = [
@@ -8,7 +9,23 @@ const languages = [
   { code: "ru-RU", name: "Russe", flag: "🇷🇺", script: "Cyrillique" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (session) {
+    const lastSession = await db.practiceSession.findFirst({
+      where: { userId: session.user.id },
+      orderBy: { startedAt: "desc" },
+      include: { language: { select: { code: true } } },
+    });
+
+    if (lastSession) {
+      redirect(`/langue/${encodeURIComponent(lastSession.language.code)}`);
+    } else {
+      redirect("/langue");
+    }
+  }
+
   return (
     <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
       <h1 style={{ fontSize: "48px", marginBottom: "10px" }}>Sen</h1>
