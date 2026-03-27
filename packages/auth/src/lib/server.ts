@@ -4,7 +4,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "@repo/database/client";
 
 export const auth = betterAuth({
-  appName: "Turbo Starter",
+  appName: "Sen",
+  baseURL: process.env.BETTER_AUTH_URL!,
 
   database: prismaAdapter(db, {
     provider: "sqlite",
@@ -14,30 +15,15 @@ export const auth = betterAuth({
 
   advanced: {
     crossSubDomainCookies: {
-      domain: process.env.COOKIE_DOMAIN!,
-      enabled: true,
+      domain: process.env.COOKIE_DOMAIN ?? "",
+      enabled: !!process.env.COOKIE_DOMAIN,
     },
   },
 
   secret: process.env.BETTER_AUTH_SECRET!,
 
-  // methods
   emailAndPassword: {
     enabled: true,
-  },
-  // socialProviders: {},
-
-  // extending
-  user: {
-    additionalFields: {
-      stats: {
-        type: "string",
-        references: {
-          model: "UserStats",
-          field: "id",
-        }
-      }
-    },
   },
 });
 
