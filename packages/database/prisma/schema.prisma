@@ -22,9 +22,10 @@ model User {
   sessions Session[]
   accounts Account[]
 
-  userStats UserStats[]
-  progress  UserProgress[]
-  sessions2 PracticeSession[]
+  userStats   UserStats[]
+  progress    UserProgress[]
+  sessions2   PracticeSession[]
+  userCourses UserCourse[]
 
   stats String?
 
@@ -109,6 +110,8 @@ model Language {
   characters Character[]
   courses    Course[]
   sessions   PracticeSession[]
+  words      Word[]
+  phrases    Phrase[]
 
   @@map("language")
 }
@@ -119,16 +122,21 @@ model Course {
   id          String   @id @default(cuid())
   languageId  String
   language    Language @relation(fields: [languageId], references: [id])
-  /// Numéro de niveau ex: 1, 2, 3
+  /// "character" | "word" | "phrase"
+  type        String   @default("character")
+  /// Numéro de niveau dans ce type ex: 1, 2, 3
   level       Int
   /// Titre affiché ex: "Cours 1 — Voyelles"
   title       String
   description String?
   createdAt   DateTime @default(now())
 
-  characters Character[]
+  characters  Character[]
+  words       Word[]
+  phrases     Phrase[]
+  userCourses UserCourse[]
 
-  @@unique([languageId, level])
+  @@unique([languageId, type, level])
   @@map("course")
   @@index([languageId])
 }
@@ -225,6 +233,72 @@ model PracticeSession {
   @@map("practice_session")
   @@index([userId])
   @@index([languageId])
+}
+
+// ─── Vocabulaire ──────────────────────────────────────────────────────────────
+
+model Word {
+  id          String   @id @default(cuid())
+  languageId  String
+  language    Language @relation(fields: [languageId], references: [id])
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id])
+
+  /// Le mot en langue cible ex: "あおい", "кот"
+  text        String
+  /// Lecture romanisée ex: "aoi", "kot"
+  reading     String?
+  /// Traduction ex: "bleu", "chat"
+  meaning     String
+  audioText   String?
+  courseLevel Int      @default(1)
+
+  createdAt   DateTime @default(now())
+
+  @@map("word")
+  @@index([languageId])
+  @@index([courseId])
+}
+
+// ─── Phrases ──────────────────────────────────────────────────────────────────
+
+model Phrase {
+  id          String   @id @default(cuid())
+  languageId  String
+  language    Language @relation(fields: [languageId], references: [id])
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id])
+
+  /// La phrase en langue cible ex: "おはようございます"
+  text        String
+  /// Lecture romanisée ex: "Ohayou gozaimasu"
+  reading     String?
+  /// Traduction ex: "Bonjour (le matin)"
+  translation String
+  audioText   String?
+  courseLevel Int      @default(1)
+
+  createdAt   DateTime @default(now())
+
+  @@map("phrase")
+  @@index([languageId])
+  @@index([courseId])
+}
+
+// ─── Inscription aux cours ────────────────────────────────────────────────────
+
+model UserCourse {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@map("user_course")
+  @@index([userId])
+  @@index([courseId])
 }
 
 // ─── Tentatives de tracé ─────────────────────────────────────────────────────
