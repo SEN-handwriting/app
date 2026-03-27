@@ -2,73 +2,67 @@ import { db } from "../src/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type LanguageSeed = {
-  id: string;
-  code: string;
-  name: string;
-  script: string;
-};
-
-type CourseSeed = {
-  id: string;
-  languageId: string;
-  level: number;
-  title: string;
-  description?: string;
-};
-
-type CharacterSeed = {
-  id: string;
-  languageId: string;
-  courseId: string;
-  label: string;
-  audioText: string;
-  svgPaths: string[];
-  strokeCount?: number;
-  meanings?: string[];
-  romaji?: string[];
+type LanguageSeed = { id: string; code: string; name: string; script: string };
+type CourseSeed   = { id: string; languageId: string; type: string; level: number; title: string; description?: string };
+type CharSeed     = {
+  id: string; languageId: string; courseId: string;
+  label: string; audioText: string; svgPaths: string[];
+  strokeCount?: number; meanings?: string[]; romaji?: string[];
   readings?: { kana?: string[]; onyomi?: string[]; kunyomi?: string[] };
-  jlpt?: string;
-  courseLevel: number;
+  jlpt?: string; courseLevel: number;
 };
 
-// ─── Données ──────────────────────────────────────────────────────────────────
+// ─── Langues ──────────────────────────────────────────────────────────────────
 
 const LANGUAGES: LanguageSeed[] = [
-  { id: "lang-ja", code: "ja-JP", name: "Japonais",  script: "Hiragana"    },
-  { id: "lang-ru", code: "ru-RU", name: "Russe",     script: "Cyrillique"  },
+  { id: "lang-ja", code: "ja-JP", name: "Japonais", script: "Hiragana"   },
+  { id: "lang-ru", code: "ru-RU", name: "Russe",    script: "Cyrillique" },
 ];
+
+// ─── Cours ────────────────────────────────────────────────────────────────────
+// type = "character" | "word" | "phrase"
 
 const COURSES: CourseSeed[] = [
-  {
-    id:          "course-ja-1",
-    languageId:  "lang-ja",
-    level:       1,
-    title:       "Voyelles — あいうえお",
-    description: "Les 5 voyelles de base de l'Hiragana",
-  },
-  {
-    id:          "course-ru-1",
-    languageId:  "lang-ru",
-    level:       1,
-    title:       "Voyelles — А О У И Э Е Ю Я",
-    description: "Les voyelles cyrilliques essentielles",
-  },
-  {
-    id:          "course-ru-2",
-    languageId:  "lang-ru",
-    level:       2,
-    title:       "Consonnes fréquentes — Н Т М К Л П С Р Б В",
-    description: "Les consonnes cyrilliques les plus utilisées",
-  },
+  // ── Hiragana — Caractères ──────────────────────────────────────────────────
+  { id: "course-ja-char-1",  languageId: "lang-ja", type: "character", level: 1,  title: "Voyelles — あいうえお",  description: "Les 5 voyelles de base de l'Hiragana" },
+  { id: "course-ja-char-2",  languageId: "lang-ja", type: "character", level: 2,  title: "Série K — かきくけこ",   description: "Syllabes de la rangée K" },
+  { id: "course-ja-char-3",  languageId: "lang-ja", type: "character", level: 3,  title: "Série S — さしすせそ",   description: "Syllabes de la rangée S" },
+  { id: "course-ja-char-4",  languageId: "lang-ja", type: "character", level: 4,  title: "Série T — たちつてと",   description: "Syllabes de la rangée T" },
+  { id: "course-ja-char-5",  languageId: "lang-ja", type: "character", level: 5,  title: "Série N — なにぬねの",   description: "Syllabes de la rangée N" },
+  { id: "course-ja-char-6",  languageId: "lang-ja", type: "character", level: 6,  title: "Série H — はひふへほ",   description: "Syllabes de la rangée H" },
+  { id: "course-ja-char-7",  languageId: "lang-ja", type: "character", level: 7,  title: "Série M — まみむめも",   description: "Syllabes de la rangée M" },
+  { id: "course-ja-char-8",  languageId: "lang-ja", type: "character", level: 8,  title: "Série Y — やゆよ",       description: "Syllabes de la rangée Y" },
+  { id: "course-ja-char-9",  languageId: "lang-ja", type: "character", level: 9,  title: "Série R — らりるれろ",   description: "Syllabes de la rangée R" },
+  { id: "course-ja-char-10", languageId: "lang-ja", type: "character", level: 10, title: "Série W — わをん",        description: "Syllabes finales わをん" },
+
+  // ── Cyrillique — Caractères ───────────────────────────────────────────────
+  { id: "course-ru-char-1", languageId: "lang-ru", type: "character", level: 1, title: "Voyelles — А О У И Э Е Ю Я",        description: "Les 8 voyelles cyrilliques essentielles" },
+  { id: "course-ru-char-2", languageId: "lang-ru", type: "character", level: 2, title: "Consonnes I — Н Т М К Л П С Р Б В",  description: "10 consonnes cyrilliques courantes" },
+  { id: "course-ru-char-3", languageId: "lang-ru", type: "character", level: 3, title: "Consonnes II — Г Д З Й Ф Х",         description: "6 consonnes cyrilliques fréquentes" },
+  { id: "course-ru-char-4", languageId: "lang-ru", type: "character", level: 4, title: "Consonnes III — Ж Ц Ч Ш",            description: "4 consonnes cyrilliques complexes" },
+  { id: "course-ru-char-5", languageId: "lang-ru", type: "character", level: 5, title: "Signes spéciaux — Щ Ъ Ы Ь Ё",        description: "Les 5 caractères spéciaux de l'alphabet russe" },
+
+  // ── Mots — Japonais ───────────────────────────────────────────────────────
+  { id: "course-ja-word-1", languageId: "lang-ja", type: "word", level: 1, title: "Mots essentiels — Nature", description: "Vocabulaire de base en hiragana : nature & objets" },
+  { id: "course-ja-word-2", languageId: "lang-ja", type: "word", level: 2, title: "Mots essentiels — Animaux & Couleurs", description: "Animaux et couleurs courants en hiragana" },
+
+  // ── Mots — Russe ──────────────────────────────────────────────────────────
+  { id: "course-ru-word-1", languageId: "lang-ru", type: "word", level: 1, title: "Mots essentiels — Famille & Vie quotidienne", description: "Vocabulaire de base cyrillique" },
+  { id: "course-ru-word-2", languageId: "lang-ru", type: "word", level: 2, title: "Mots essentiels — Nature & Nourriture", description: "Nature et nourriture en cyrillique" },
 ];
 
-// Paths source Hiragana : KanjiVG (https://kanjivg.tagaini.net) — CC BY-SA 3.0
-// Paths Cyrillique : dessinés manuellement, viewBox 0 0 109 109
-const CHARACTERS: CharacterSeed[] = [
-  // ── Hiragana — Cours 1 (voyelles) ──────────────────────────────────────────
+// ─── Caractères ───────────────────────────────────────────────────────────────
+// Hiragana paths : KanjiVG (https://kanjivg.tagaini.net) — CC BY-SA 3.0 — viewBox 0 0 109 109
+// Cyrillique paths : dessinés manuellement — viewBox 0 0 109 109
+
+const CHARACTERS: CharSeed[] = [
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 1 : Voyelles あいうえお
+  // ════════════════════════════════════════════════════════════════════════════
+
   {
-    id: "hiragana-あ", languageId: "lang-ja", courseId: "course-ja-1",
+    id: "hiragana-a", languageId: "lang-ja", courseId: "course-ja-char-1",
     label: "あ", audioText: "あ", strokeCount: 3, jlpt: "N5", courseLevel: 1,
     meanings: ["hiragana a"], romaji: ["a"], readings: { kana: ["あ"] },
     svgPaths: [
@@ -78,7 +72,7 @@ const CHARACTERS: CharacterSeed[] = [
     ],
   },
   {
-    id: "hiragana-い", languageId: "lang-ja", courseId: "course-ja-1",
+    id: "hiragana-i", languageId: "lang-ja", courseId: "course-ja-char-1",
     label: "い", audioText: "い", strokeCount: 2, jlpt: "N5", courseLevel: 1,
     meanings: ["hiragana i"], romaji: ["i"], readings: { kana: ["い"] },
     svgPaths: [
@@ -87,169 +81,571 @@ const CHARACTERS: CharacterSeed[] = [
     ],
   },
   {
-    id: "hiragana-う", languageId: "lang-ja", courseId: "course-ja-1",
-    label: "う", audioText: "う", strokeCount: 3, jlpt: "N5", courseLevel: 1,
+    id: "hiragana-u", languageId: "lang-ja", courseId: "course-ja-char-1",
+    label: "う", audioText: "う", strokeCount: 2, jlpt: "N5", courseLevel: 1,
     meanings: ["hiragana u"], romaji: ["u"], readings: { kana: ["う"] },
     svgPaths: [
-      "M30.88,27.12c1.75,0.5,3.62,0.62,5.5,0.37c7.12-1,18.5-2.88,27.12-4.12c1.88-0.25,3.75-0.5,5.62-0.25",
-      "M48.88,28.88c0.75,0.75,1.12,2.12,1,3.38c-0.62,6.75-3.88,24.88-11.88,36.62c-1.88,2.75-3.5,2.5-5.12-0.25c-1.12-1.88-2-4.38-2.88-7",
-      "M50.25,47.12c2.88,0.62,16.38,11.12,24,19.38c1.88,2,3.5,3.88,5.5,4.88",
+      "M42,15.5c5.62,2.12,9.62,3,12.88,3c8.27,0,8,1.12-0.38,5.5",
+      "M33,42.38c2.12,1.12,4.12,2.88,8.5,1.38c4.38-1.5,12.75-7.12,18.5-7c5.75,0.12,10.25,5,10.25,18c0,15.49-8.25,30.24-24.37,41.24",
     ],
   },
   {
-    id: "hiragana-え", languageId: "lang-ja", courseId: "course-ja-1",
-    label: "え", audioText: "え", strokeCount: 4, jlpt: "N5", courseLevel: 1,
+    id: "hiragana-e", languageId: "lang-ja", courseId: "course-ja-char-1",
+    label: "え", audioText: "え", strokeCount: 2, jlpt: "N5", courseLevel: 1,
     meanings: ["hiragana e"], romaji: ["e"], readings: { kana: ["え"] },
     svgPaths: [
-      "M26.12,40.88c1.88,0.5,4.5,0.62,6.38,0.37c10-1.25,26.38-3.5,37.25-4.12c2.12-0.12,4.25-0.25,6.38,0.25",
-      "M42.88,17.62c1,1,1.5,2.38,1.5,4c0,1.88-0.12,36.75-0.12,54.75c0,3.25,0,5.88,0,7.62",
-      "M44.25,40c-6.5,12.25-17.88,24.25-29.88,30.62",
-      "M48.5,45.38c5.62,3.5,21.25,15.62,28.25,21.5c1.88,1.62,4.25,3.12,6.38,3.75",
+      "M40.52,13.25c5.62,2.12,10,3,14.12,3c8.27,0,8,1.12-0.38,5.5",
+      "M32.52,45.12c1.88,1.25,4.5,1.75,7.38,0.62c3.29-1.29,17-7.88,21.25-9.88c4.25-2,8.32,0.04,4.38,4.62c-12.26,14.27-27.26,31.52-39.51,44.4c-3.26,3.42-0.58,3.54,1.5,1.37c13.5-14.12,18.12-20.12,23.62-20.12c7.13,0,3.5,16.75,6.75,22.38c3.25,5.63,19.12,3.75,26.12,2.12",
     ],
   },
   {
-    id: "hiragana-お", languageId: "lang-ja", courseId: "course-ja-1",
-    label: "お", audioText: "お", strokeCount: 4, jlpt: "N5", courseLevel: 1,
+    id: "hiragana-o", languageId: "lang-ja", courseId: "course-ja-char-1",
+    label: "お", audioText: "お", strokeCount: 3, jlpt: "N5", courseLevel: 1,
     meanings: ["hiragana o"], romaji: ["o"], readings: { kana: ["お"] },
     svgPaths: [
-      "M24.75,28.25c2,0.62,4.75,0.75,6.88,0.5c8.62-1,23-3.12,32.62-3.88c2.12-0.16,4.25-0.25,6.38,0.25",
-      "M42.25,31c0.88,0.88,1.25,2.25,1.25,3.5c0,1.25-0.12,28.75-0.12,40.88",
-      "M23.25,75.62c2.12,0.62,5,0.75,7.12,0.5c11-1.25,29.5-3.5,43.38-4.25c2.25-0.12,4.5-0.25,6.75,0.25",
-      "M43.88,53.88c6.5,0,24,16.25,31.38,22.38c2,1.62,4.5,3.25,6.88,3.88",
+      "M22.88,35.12c1.38,1,3.62,2.38,6,2.12c2.38-0.26,19.62-5.12,21.12-5.74c1.5-0.62,4-1.25,5.88-2",
+      "M41.5,16.12c2.25,1,3.59,4.39,3.12,7.38c-2.5,16.12-3.37,45.53-2.25,58.38c0.75,8.62-0.64,10.45-7.12,7.12c-5.13-2.62-13.75-8-13.75-12.38c0-7.5,24.38-23.62,44.75-23.62c17.25,0,25,8.25,25,17.25c0,8.25-9.38,18.88-26.75,21",
+      "M73,22.12c5.38,2.62,8.88,5.88,10.62,8.25c2.27,3.08,0.38,4.5-1.12,5",
     ],
   },
 
-  // ── Cyrillique — Cours 1 (voyelles) ────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 2 : Série K かきくけこ
+  // ════════════════════════════════════════════════════════════════════════════
+
   {
-    id: "cyrillic-А", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "А", audioText: "А", strokeCount: 3, courseLevel: 1,
-    meanings: ["voyelle a"], romaji: ["a"],
-    svgPaths: ["M55,18L25,90", "M55,18L85,90", "M36,56L74,56"],
-  },
-  {
-    id: "cyrillic-О", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "О", audioText: "О", strokeCount: 1, courseLevel: 1,
-    meanings: ["voyelle o"], romaji: ["o"],
-    svgPaths: ["M54.5,18c-21,0,-36,16.5,-36,36.5c0,20,15,36.5,36,36.5c21,0,36.5,-16.5,36.5,-36.5c0,-20,-15.5,-36.5,-36.5,-36.5"],
-  },
-  {
-    id: "cyrillic-У", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "У", audioText: "У", strokeCount: 2, courseLevel: 1,
-    meanings: ["voyelle ou"], romaji: ["ou"],
-    svgPaths: ["M25,22L55,60", "M85,22L55,60L55,90"],
-  },
-  {
-    id: "cyrillic-И", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "И", audioText: "И", strokeCount: 3, courseLevel: 1,
-    meanings: ["voyelle i"], romaji: ["i"],
-    svgPaths: ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90"],
-  },
-  {
-    id: "cyrillic-Э", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "Э", audioText: "Э", strokeCount: 2, courseLevel: 1,
-    meanings: ["voyelle é"], romaji: ["é"],
-    svgPaths: ["M27,35c0,-18,56,-18,56,20c0,37,-56,37,-56,20", "M42,55L82,55"],
-  },
-  {
-    id: "cyrillic-Е", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "Е", audioText: "Е", strokeCount: 4, courseLevel: 1,
-    meanings: ["voyelle yé"], romaji: ["yé"],
-    svgPaths: ["M28,20L28,90", "M28,20L80,20", "M28,55L72,55", "M28,90L80,90"],
-  },
-  {
-    id: "cyrillic-Ю", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "Ю", audioText: "Ю", strokeCount: 3, courseLevel: 1,
-    meanings: ["voyelle you"], romaji: ["you"],
+    id: "hiragana-ka", languageId: "lang-ja", courseId: "course-ja-char-2",
+    label: "か", audioText: "か", strokeCount: 3, jlpt: "N5", courseLevel: 2,
+    meanings: ["hiragana ka"], romaji: ["ka"], readings: { kana: ["か"] },
     svgPaths: [
-      "M22,20L22,90",
-      "M22,55L40,55",
-      "M65,30c-13.8,0,-25,11.2,-25,25c0,13.8,11.2,25,25,25c13.8,0,25,-11.2,25,-25c0,-13.8,-11.2,-25,-25,-25",
+      "M24.62,38.62c1.88,1.62,4.65,2.33,8.62,1c25.5-8.5,29.5-4.13,29.5,7.62c0,9.38-1.24,17.46-4.25,25.25c-7.62,19.76-10.87,17.39-16.12,10.89",
+      "M48.5,17.5c1,1.38,1.29,4.7,0.5,7.12c-5,15.25-18.02,40.93-19.62,43.88c-3.12,5.75-6.38,11.88-9.38,16.25",
+      "M77.37,31.62c7.5,6.88,13.25,15.75,15,24.88",
     ],
   },
   {
-    id: "cyrillic-Я", languageId: "lang-ru", courseId: "course-ru-1",
-    label: "Я", audioText: "Я", strokeCount: 3, courseLevel: 1,
-    meanings: ["voyelle ya"], romaji: ["ya"],
-    svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20", "M25,58L75,90"],
+    id: "hiragana-ki", languageId: "lang-ja", courseId: "course-ja-char-2",
+    label: "き", audioText: "き", strokeCount: 4, jlpt: "N5", courseLevel: 2,
+    meanings: ["hiragana ki"], romaji: ["ki"], readings: { kana: ["き"] },
+    svgPaths: [
+      "M30.5,30.25c1.88,0.75,4.64,1.06,5.88,0.88c6.75-1,22.25-4.5,26.5-6c2.17-0.76,3.5-1.25,4.88-2.12",
+      "M36.25,48.7c2.01,0.85,4.97,1.2,6.29,0.99c7.23-1.13,23.82-5.09,28.37-6.79c2.32-0.86,3.75-1.41,5.22-2.4",
+      "M42,14.12c1.5,0.88,3.13,2.94,4,5.12c5.5,13.76,16,29.26,26.37,40.76c7.64,8.47,9.12,9.38-6,3.88",
+      "M33.75,83.25c10.62,9.75,27.25,8.62,38.12,5",
+    ],
+  },
+  {
+    id: "hiragana-ku", languageId: "lang-ja", courseId: "course-ja-char-2",
+    label: "く", audioText: "く", strokeCount: 1, jlpt: "N5", courseLevel: 2,
+    meanings: ["hiragana ku"], romaji: ["ku"], readings: { kana: ["く"] },
+    svgPaths: [
+      "M60.66,15c0.5,1.62,0.35,5.44-1,7.38c-6.75,9.62-14.3,19.08-18.62,24.5c-4,5-3.79,7.03-0.88,11c5.5,7.5,12.75,18.75,17.62,27.25c1.48,2.59,2.75,4.75,4.5,8.62",
+    ],
+  },
+  {
+    id: "hiragana-ke", languageId: "lang-ja", courseId: "course-ja-char-2",
+    label: "け", audioText: "け", strokeCount: 3, jlpt: "N5", courseLevel: 2,
+    meanings: ["hiragana ke"], romaji: ["ke"], readings: { kana: ["け"] },
+    svgPaths: [
+      "M24.67,19.75c1.25,1.5,2.62,3.75,2.12,6.38c-3,15.88-6.5,29.5-4.88,44.62c2.02,18.84,2.25,4.75,6.75-3.5",
+      "M53.67,38.62c2.12,1.38,4.28,1.89,6.88,1.5c8.25-1.25,15.39-2.57,20.62-4c2.76-0.74,5.26-1.12,6.88-1.12",
+      "M71.67,14.38c2.13,1.37,2.88,3.35,2.88,5.12c0,11.62,0.12,20.38,0.12,30.12c0,20.75-0.62,30.88-12.5,42.25",
+    ],
+  },
+  {
+    id: "hiragana-ko", languageId: "lang-ja", courseId: "course-ja-char-2",
+    label: "こ", audioText: "こ", strokeCount: 2, jlpt: "N5", courseLevel: 2,
+    meanings: ["hiragana ko"], romaji: ["ko"], readings: { kana: ["こ"] },
+    svgPaths: [
+      "M34.75,26.75c1.12,0.88,2.91,2.01,6,1.5c7.62-1.25,14.11-2.56,22.38-2.62c15.5-0.12,5.88,5-5.75,9",
+      "M30,68.12c2.25,14.5,15.26,17.96,31,16.75c6.5-0.5,11.88-1.25,17.62-2.88",
+    ],
   },
 
-  // ── Cyrillique — Cours 2 (consonnes fréquentes) ─────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 3 : Série S さしすせそ
+  // ════════════════════════════════════════════════════════════════════════════
+
   {
-    id: "cyrillic-Н", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "Н", audioText: "Н", strokeCount: 3, courseLevel: 2,
-    meanings: ["consonne n"], romaji: ["n"],
-    svgPaths: ["M25,20L25,90", "M85,20L85,90", "M25,55L85,55"],
-  },
-  {
-    id: "cyrillic-Т", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "Т", audioText: "Т", strokeCount: 2, courseLevel: 2,
-    meanings: ["consonne t"], romaji: ["t"],
-    svgPaths: ["M20,22L89,22", "M54.5,22L54.5,90"],
-  },
-  {
-    id: "cyrillic-М", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "М", audioText: "М", strokeCount: 3, courseLevel: 2,
-    meanings: ["consonne m"], romaji: ["m"],
-    svgPaths: ["M20,90L20,20", "M20,20L54.5,60L89,20", "M89,20L89,90"],
-  },
-  {
-    id: "cyrillic-К", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "К", audioText: "К", strokeCount: 3, courseLevel: 2,
-    meanings: ["consonne k"], romaji: ["k"],
-    svgPaths: ["M25,20L25,90", "M25,55L80,20", "M25,55L80,90"],
-  },
-  {
-    id: "cyrillic-Л", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "Л", audioText: "Л", strokeCount: 2, courseLevel: 2,
-    meanings: ["consonne l"], romaji: ["l"],
-    svgPaths: ["M22,20L85,20L85,90", "M22,20L35,90"],
-  },
-  {
-    id: "cyrillic-П", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "П", audioText: "П", strokeCount: 3, courseLevel: 2,
-    meanings: ["consonne p"], romaji: ["p"],
-    svgPaths: ["M25,22L85,22", "M25,22L25,90", "M85,22L85,90"],
-  },
-  {
-    id: "cyrillic-С", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "С", audioText: "С", strokeCount: 1, courseLevel: 2,
-    meanings: ["consonne s"], romaji: ["s"],
-    svgPaths: ["M82,35c0,-18,-60,-18,-60,20c0,36,60,36,60,20"],
-  },
-  {
-    id: "cyrillic-Р", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "Р", audioText: "Р", strokeCount: 2, courseLevel: 2,
-    meanings: ["consonne r"], romaji: ["r"],
-    svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20"],
-  },
-  {
-    id: "cyrillic-Б", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "Б", audioText: "Б", strokeCount: 2, courseLevel: 2,
-    meanings: ["consonne b"], romaji: ["b"],
-    svgPaths: ["M80,20L25,20L25,90", "M25,55c10,0,50,-5,50,18c0,20,-28,18,-50,18"],
-  },
-  {
-    id: "cyrillic-В", languageId: "lang-ru", courseId: "course-ru-2",
-    label: "В", audioText: "В", strokeCount: 3, courseLevel: 2,
-    meanings: ["consonne v"], romaji: ["v"],
+    id: "hiragana-sa", languageId: "lang-ja", courseId: "course-ja-char-3",
+    label: "さ", audioText: "さ", strokeCount: 3, jlpt: "N5", courseLevel: 3,
+    meanings: ["hiragana sa"], romaji: ["sa"], readings: { kana: ["さ"] },
     svgPaths: [
-      "M25,20L25,90",
-      "M25,20c30,0,50,0,50,18c0,13,-20,17,-50,20",
-      "M25,58c30,0,55,2,55,17c0,17,-25,15,-55,15",
+      "M27,38.9c2.42,1.33,5.38,1.47,8.32,1.06c8.79-1.24,28.67-7.76,34.15-10.43c2.79-1.36,3.78-1.91,6.28-3.53",
+      "M41.5,13.88c1.5,0.88,3.63,2.94,4.5,5.12c5.5,13.75,15.25,27.62,26.87,39.5c7.98,8.15,6.38,10-6,3.12",
+      "M35.25,80.5c4.5,11.75,20.88,12.5,38.38,7.5",
     ],
   },
+  {
+    id: "hiragana-shi", languageId: "lang-ja", courseId: "course-ja-char-3",
+    label: "し", audioText: "し", strokeCount: 1, jlpt: "N5", courseLevel: 3,
+    meanings: ["hiragana shi"], romaji: ["shi"], readings: { kana: ["し"] },
+    svgPaths: [
+      "M39.12,17.5c1.25,3.12,0.93,6.74,0.38,10.25c-2.12,13.5-3,26.5-3,39.12c0,27.38,19.88,30.12,45.5,17.25",
+    ],
+  },
+  {
+    id: "hiragana-su", languageId: "lang-ja", courseId: "course-ja-char-3",
+    label: "す", audioText: "す", strokeCount: 2, jlpt: "N5", courseLevel: 3,
+    meanings: ["hiragana su"], romaji: ["su"], readings: { kana: ["す"] },
+    svgPaths: [
+      "M15.5,37.12c2.88,2.12,6.94,1.51,12.75,0.25c16.12-3.5,36.14-5.38,46.62-6.5c7-0.75,11.88-0.62,17.75,0.12",
+      "M57.62,13.38c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,35.12,0,40.75c0,14.62-15.62,16.38-15.62,1.75c0-14.25,18-14.12,18,6.38c0,13.25-7.75,21.5-16,28.38",
+    ],
+  },
+  {
+    id: "hiragana-se", languageId: "lang-ja", courseId: "course-ja-char-3",
+    label: "せ", audioText: "せ", strokeCount: 3, jlpt: "N5", courseLevel: 3,
+    meanings: ["hiragana se"], romaji: ["se"], readings: { kana: ["せ"] },
+    svgPaths: [
+      "M16.5,49.93c2.88,2.42,6.86,1.57,12.75,0.53c19-3.34,33-5.72,47.12-7.64c6.99-0.95,11.88-1.21,17.75-0.36",
+      "M69.74,17.75c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,17.88,0,23.5c0,25.62-5.75,23.25-11.88,19",
+      "M35.62,26.25c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,28.38,0,34c0,14.5,6.38,19.55,20.14,19.55c10.24,0,13.74,0.07,22.61-1.68",
+    ],
+  },
+  {
+    id: "hiragana-so", languageId: "lang-ja", courseId: "course-ja-char-3",
+    label: "そ", audioText: "そ", strokeCount: 1, jlpt: "N5", courseLevel: 3,
+    meanings: ["hiragana so"], romaji: ["so"], readings: { kana: ["そ"] },
+    svgPaths: [
+      "M38.4,22c1.88,1.25,4.98,1.05,7.5,0.38c6.5-1.75,13.25-3.75,19.38-5.38c4.63-1.23,7.18,2.06,3.62,5.25c-12.12,10.87-31.14,24.4-40,30.25c-6.25,4.12-5.88,5.75,1.38,3.88c17.08-4.42,35.96-8.68,50.12-10.38c9.38-1.12,9.62,0.12,0.5,1.38c-15.82,2.17-34.38,14.25-34.38,26.5c0,12.88,11.62,20.38,31.5,16.62",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 4 : Série T たちつてと
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-ta", languageId: "lang-ja", courseId: "course-ja-char-4",
+    label: "た", audioText: "た", strokeCount: 4, jlpt: "N5", courseLevel: 4,
+    meanings: ["hiragana ta"], romaji: ["ta"], readings: { kana: ["た"] },
+    svgPaths: [
+      "M24.38,35.38c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,16.25-2.88,24.88-4.75c2.64-0.57,5.38-1.5,7.62-2.38",
+      "M45,16.88c0.75,1.25,0.87,3.62,0.38,5.25c-6.35,20.94-12.75,36.37-18.88,52.37c-1.36,3.56-4.75,11.75-6,14.62",
+      "M56.38,53.25c12.38-2.75,18.25-3.7,23.62-3.12c15.12,1.62-1.12,2.25-4.25,4.88",
+      "M54.13,82.25c4.38,7,14.25,8.12,34.5,5.62",
+    ],
+  },
+  {
+    id: "hiragana-chi", languageId: "lang-ja", courseId: "course-ja-char-4",
+    label: "ち", audioText: "ち", strokeCount: 2, jlpt: "N5", courseLevel: 4,
+    meanings: ["hiragana chi"], romaji: ["chi"], readings: { kana: ["ち"] },
+    svgPaths: [
+      "M24.5,32.62c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,18.25-4.12,26.88-6c2.64-0.57,5.38-1.5,7.62-2.38",
+      "M45.62,15.62c0.75,1.25,0.71,3.58,0.38,5.25c-3,15-4.25,22.59-8.38,38.62c-3.25,12.62-5.38,11.12,3.62,4.38c8.29-6.21,19.75-9.5,28.5-9.5c8.62,0,14.58,5.88,14.5,14.5c-0.12,13.5-16.5,20.62-29.88,23.25",
+    ],
+  },
+  {
+    id: "hiragana-tsu", languageId: "lang-ja", courseId: "course-ja-char-4",
+    label: "つ", audioText: "つ", strokeCount: 1, jlpt: "N5", courseLevel: 4,
+    meanings: ["hiragana tsu"], romaji: ["tsu"], readings: { kana: ["つ"] },
+    svgPaths: [
+      "M14,44.75c1.88,1.62,4.68,2.09,8.12,0.62c17.88-7.62,30-11.12,44.88-10.88c12.56,0.21,22.98,7.17,22.87,19.17c-0.18,18.77-24.75,28.71-45.01,32.08",
+    ],
+  },
+  {
+    id: "hiragana-te", languageId: "lang-ja", courseId: "course-ja-char-4",
+    label: "て", audioText: "て", strokeCount: 1, jlpt: "N5", courseLevel: 4,
+    meanings: ["hiragana te"], romaji: ["te"], readings: { kana: ["て"] },
+    svgPaths: [
+      "M20.5,26.38c1.87,1.62,4.42,1.97,8.12,1.37c21.75-3.5,33-5.12,50.12-8.38c12.34-2.34,13-0.88,0.38,1.38c-17.89,3.19-33.78,19.12-33.78,37.62c0,20.5,17.91,30.25,35.16,30.25",
+    ],
+  },
+  {
+    id: "hiragana-to", languageId: "lang-ja", courseId: "course-ja-char-4",
+    label: "と", audioText: "と", strokeCount: 2, jlpt: "N5", courseLevel: 4,
+    meanings: ["hiragana to"], romaji: ["to"], readings: { kana: ["と"] },
+    svgPaths: [
+      "M35.5,18.38c1.74,0.74,3.62,2.62,4.12,5.37c0.5,2.75,4.75,25,5.38,28.12",
+      "M78.12,25.5c0.25,1.88,0.04,4.09-2.25,5.75c-6.37,4.63-13.22,8.49-22.75,15.25c-12.88,9.12-21.62,18.38-21.62,27.5c0,10.12,8.5,13.88,26.88,13.88c6.25,0,14.75-0.12,21.62-1.25",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 5 : Série N なにぬねの
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-na", languageId: "lang-ja", courseId: "course-ja-char-5",
+    label: "な", audioText: "な", strokeCount: 4, jlpt: "N5", courseLevel: 5,
+    meanings: ["hiragana na"], romaji: ["na"], readings: { kana: ["な"] },
+    svgPaths: [
+      "M22.88,28.96c1.18,0.58,3.3,1.1,5.47,1.05c5.53-0.13,10.9-0.98,16.52-2.42c4.82-1.23,9.13-3.12,11.38-4.22",
+      "M42.99,14c0.63,0.89,0.56,2.52,0.31,3.72c-2.96,14.16-7.95,26.56-14.25,37.87c-2.05,3.69-4.25,7.24-6.55,10.65",
+      "M72.26,23.25c6.88,2.5,12.62,5.62,14.75,9.5c4.06,7.41-0.25,3.38-3.5,3.88",
+      "M68.88,44.62c-1,1.88-2.14,5.24-1.88,8.25c0.62,7,1.5,13.12,1.5,20.62c0,20-27.88,19.75-27.88,9.38c0-5.62,8.25-8.25,13.88-8.25c8.75,0,21.5,3.25,29.75,11.5",
+    ],
+  },
+  {
+    id: "hiragana-ni", languageId: "lang-ja", courseId: "course-ja-char-5",
+    label: "に", audioText: "に", strokeCount: 3, jlpt: "N5", courseLevel: 5,
+    meanings: ["hiragana ni"], romaji: ["ni"], readings: { kana: ["に"] },
+    svgPaths: [
+      "M24.53,22.75c1.25,1.5,1.62,3.75,1.12,6.38c-3,15.88-9,32.5-7.38,47.62c2.02,18.84,4.5,5.75,8.5-3.5",
+      "M53.2,30.64c0.96,0.79,2.44,1.58,5.1,1.35c6.98-0.61,15.01-3.3,22.04-3.36c13.19-0.11,1.5,3.75-8.39,7.35",
+      "M52.53,68c1.76,12.92,11.92,16.01,24.23,14.93c5.08-0.45,8.9-0.8,14.27-2.06",
+    ],
+  },
+  {
+    id: "hiragana-nu", languageId: "lang-ja", courseId: "course-ja-char-5",
+    label: "ぬ", audioText: "ぬ", strokeCount: 2, jlpt: "N5", courseLevel: 5,
+    meanings: ["hiragana nu"], romaji: ["nu"], readings: { kana: ["ぬ"] },
+    svgPaths: [
+      "M25.38,28.5c2,1.38,2.97,3.23,3.38,5.88c1.87,12.18,4.12,23.92,8.54,34.67c1.79,4.36,3.96,8.33,6.84,12.46",
+      "M57.12,19.25c0.88,2.12,1.06,3.79,0.62,5.88c-3.12,15-13.14,39.81-18.12,48.62c-11.87,21-20.62,1.25-20.62-4.5c0-22.63,43.75-44.25,62.36-29.59c7.66,6.03,9.8,14.58,9.14,23.34c-2,26.75-32.88,28.38-32.88,16.88c0-9.38,17.38-7.12,27.12-1.12c3.1,1.91,7.25,5.25,9.5,7.5",
+    ],
+  },
+  {
+    id: "hiragana-ne", languageId: "lang-ja", courseId: "course-ja-char-5",
+    label: "ね", audioText: "ね", strokeCount: 2, jlpt: "N5", courseLevel: 5,
+    meanings: ["hiragana ne"], romaji: ["ne"], readings: { kana: ["ね"] },
+    svgPaths: [
+      "M33.29,14.5c1.62,1.62,2.1,3.21,1.88,5.88c-1.03,11.93-2.06,31.66-2.53,53.12c-0.1,4.62-0.18,9.31-0.22,14",
+      "M17.16,37.88c1.62,0.88,3.25,1.38,5.62,0.75c2.14-0.56,7.8-2.31,12.37-4.03c6.26-2.35,6.88-1.47,3.12,3.63c-5.56,7.53-13.02,17.38-18.48,26.77c-5.6,9.62-3.45,8.3,2,3c19.12-18.62,38.5-39.12,54.12-39.12c11.38,0,12.88,11.25,12.88,32.5c0,28.62-30.18,24.88-30.18,16.26c0-9.63,18.73-7.82,28.06-1.88c2.75,1.75,5.88,4.88,7.5,6.75",
+    ],
+  },
+  {
+    id: "hiragana-no", languageId: "lang-ja", courseId: "course-ja-char-5",
+    label: "の", audioText: "の", strokeCount: 1, jlpt: "N5", courseLevel: 5,
+    meanings: ["hiragana no"], romaji: ["no"], readings: { kana: ["の"] },
+    svgPaths: [
+      "M53.82,28.62c1,1.5,1.34,4.12,0.88,6.62c-1.75,9.5-6.89,25-10.75,33.12c-9.63,20.26-16.55,14.74-24.38-1.98c-9.13-19.5,23.5-48.88,50.63-40.38c32.38,10.15,28,54.62-4.75,60.88",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 6 : Série H はひふへほ
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-ha", languageId: "lang-ja", courseId: "course-ja-char-6",
+    label: "は", audioText: "は", strokeCount: 3, jlpt: "N5", courseLevel: 6,
+    meanings: ["hiragana ha"], romaji: ["ha"], readings: { kana: ["は"] },
+    svgPaths: [
+      "M24.51,18c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.62-6.98,36.4-4,54.88c2.5,15.5,1.12,2,5.62-6.25",
+      "M49.64,37.89c2.41,1.57,4.85,2.16,7.8,1.71c9.36-1.43,17.46-2.94,23.4-4.57c3.12-0.86,5.96-1.29,7.8-1.29",
+      "M69.77,16.5c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,1.5,38.62,1.5,48c0,22.5-30.62,19.62-30.62,10.5c0-9.75,23.88-5.62,29.5-2.88c5.62,2.74,11.98,8.26,13.36,9.38",
+    ],
+  },
+  {
+    id: "hiragana-hi", languageId: "lang-ja", courseId: "course-ja-char-6",
+    label: "ひ", audioText: "ひ", strokeCount: 1, jlpt: "N5", courseLevel: 6,
+    meanings: ["hiragana hi"], romaji: ["hi"], readings: { kana: ["ひ"] },
+    svgPaths: [
+      "M20,25.12c1.25,0.88,3.75,2.25,6.5,1.38c2.75-0.87,7.31-2.38,11.38-4.5c6-3.12,8.42-1.01,4.25,4c-27.13,32.62-23.76,58.5-1.52,62.88c18.07,3.56,37.63-16.38,35.63-56.51c-0.72-14.5-0.17-14.78,4.12-1.75c3.76,11.38,10.26,20.76,16.14,26.5",
+    ],
+  },
+  {
+    id: "hiragana-fu", languageId: "lang-ja", courseId: "course-ja-char-6",
+    label: "ふ", audioText: "ふ", strokeCount: 4, jlpt: "N5", courseLevel: 6,
+    meanings: ["hiragana fu"], romaji: ["fu"], readings: { kana: ["ふ"] },
+    svgPaths: [
+      "M42.63,15.62c3.62,3.38,7.5,5.38,12.74,6.13c9.59,1.37,3.5,3.38-1.88,6.12",
+      "M43.63,46.88c1.88,4.62,7.5,9.41,14.25,17.5c10.62,12.74,0.49,30-19.13,21.62",
+      "M16.5,73.38c0.75,4,1.88,8.12,5,10.12c1.16,0.74,0.12-3.38,13.25-9.12",
+      "M80.13,61.88c5.12,3.38,10.28,7.49,11.38,8.88c6.75,8.5-0.25,4.62-4.62,7.12",
+    ],
+  },
+  {
+    id: "hiragana-he", languageId: "lang-ja", courseId: "course-ja-char-6",
+    label: "へ", audioText: "へ", strokeCount: 1, jlpt: "N5", courseLevel: 6,
+    meanings: ["hiragana he"], romaji: ["he"], readings: { kana: ["へ"] },
+    svgPaths: [
+      "M15,48.75c2.25,1.62,4.67,1.96,7-0.38c3.62-3.62,7.46-6.54,11.25-10.5c5.5-5.75,8.48-4.75,13.12-0.88c12.12,10.12,30.38,25.12,33.38,27.38c3,2.26,12.37,10.38,13.87,11.63",
+    ],
+  },
+  {
+    id: "hiragana-ho", languageId: "lang-ja", courseId: "course-ja-char-6",
+    label: "ほ", audioText: "ほ", strokeCount: 4, jlpt: "N5", courseLevel: 6,
+    meanings: ["hiragana ho"], romaji: ["ho"], readings: { kana: ["ほ"] },
+    svgPaths: [
+      "M24.51,18.75c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.63-6.98,37.4-4,55.88c2.5,15.5,1.12,2,5.62-6.25",
+      "M53.08,21.13c1.9,1.28,3.82,1.76,6.14,1.4c7.36-1.17,13.73-2.4,18.41-3.73c2.46-0.7,4.69-1.05,6.13-1.05",
+      "M53.83,44.3c2.21,1.44,4.46,1.98,7.16,1.57c8.59-1.31,15.78-2.44,21.23-3.94c2.87-0.79,5.72-1.18,7.41-1.18",
+      "M72.51,23c1.38,1.62,1.62,4.12,1.62,6.5c0,2.38,2,35.12,2,44.5c0,17.5-29.88,17.12-29.88,8c0-9.75,21.38-7.88,29.5-2.88c5.33,3.28,12,8.25,13.38,9.38",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 7 : Série M まみむめも
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-ma", languageId: "lang-ja", courseId: "course-ja-char-7",
+    label: "ま", audioText: "ま", strokeCount: 3, jlpt: "N5", courseLevel: 7,
+    meanings: ["hiragana ma"], romaji: ["ma"], readings: { kana: ["ま"] },
+    svgPaths: [
+      "M29.83,32.28c2.2,1.15,4.43,1.5,7.14,1.26c11.54-1.04,25.94-3.12,34.66-4.85c2.87-0.57,5.45-0.44,7.13-0.44",
+      "M33.83,51.84c2.45,1.61,4.94,1.72,7.94,1.26c9.52-1.46,17.87-3.1,27.03-5.16c3.22-0.72,6.34-1.32,8.21-1.32",
+      "M55.81,14c1.52,1.8,1.8,4.57,1.8,7.19c0,2.63,0.46,43.88,0.46,54.25c0,21.3-30.07,19.96-30.07,9.86c0-10.79,25.88-9.93,38.57-3.18c6.12,3.25,11.55,6.38,14.8,9.13",
+    ],
+  },
+  {
+    id: "hiragana-mi", languageId: "lang-ja", courseId: "course-ja-char-7",
+    label: "み", audioText: "み", strokeCount: 2, jlpt: "N5", courseLevel: 7,
+    meanings: ["hiragana mi"], romaji: ["mi"], readings: { kana: ["み"] },
+    svgPaths: [
+      "M32.5,26c1.88,1.75,4.06,1.7,6.88,1.25c3.88-0.62,7.62-1.75,11.88-3.12c4.26-1.37,6.25-0.12,4.5,5.12c-1.75,5.24-6.66,17.39-12,30.12c-13.63,32.51-29.26,29.26-29.26,18.63c0-14.25,20.48-15.36,33-13.5c18.5,2.75,30,6.62,44.38,14.25",
+      "M79.38,54.75c0.75,2.38,0.49,4.37,0,6.25c-2.12,8.12-7.5,25-22.12,33.75",
+    ],
+  },
+  {
+    id: "hiragana-mu", languageId: "lang-ja", courseId: "course-ja-char-7",
+    label: "む", audioText: "む", strokeCount: 3, jlpt: "N5", courseLevel: 7,
+    meanings: ["hiragana mu"], romaji: ["mu"], readings: { kana: ["む"] },
+    svgPaths: [
+      "M19.59,31.65c2.1,1.55,4.24,1.66,6.81,1.21c8.17-1.41,15.33-2.98,23.19-4.96c2.76-0.69,5.44-1.27,7.05-1.27",
+      "M37.02,15.5c1.62,1.25,2.31,2.88,2.12,5.25c-0.88,11.12-1.5,20.75-4,34.88c-3.61,20.44-19.25,16.99-18.62,7.37c0.5-7.74,6.25-12.86,12.62-13.5c5-0.5,14.28,1.93,5.88,15c-12.62,19.62-11.42,24.51,5.11,25.54c10.98,0.68,19.26,0.72,28.49-0.92c14.15-2.5,7.4-2.63,7.4-11.13",
+      "M78.52,36.25c6.88,3.12,11.71,5.95,14.88,10.12c6.25,8.25-1.38,3.62-4.5,4.5",
+    ],
+  },
+  {
+    id: "hiragana-me", languageId: "lang-ja", courseId: "course-ja-char-7",
+    label: "め", audioText: "め", strokeCount: 2, jlpt: "N5", courseLevel: 7,
+    meanings: ["hiragana me"], romaji: ["me"], readings: { kana: ["め"] },
+    svgPaths: [
+      "M27.48,31.75c1.75,1,2.41,3.09,2.5,5.25c0.5,11.62,2.75,23.5,7.25,31.38c1.39,2.44,5.38,8.5,7.25,10.38",
+      "M59.6,19.38c1,1.5,1.35,4.12,0.88,6.62c-2.75,14.62-13.62,37.75-20.1,47.24c-12.28,17.14-16.78,13.14-22.28,0.64c-5.38-15.38,26.4-42.18,53.42-35.28c29.08,8.27,23.96,46.02-7.98,50.15",
+    ],
+  },
+  {
+    id: "hiragana-mo", languageId: "lang-ja", courseId: "course-ja-char-7",
+    label: "も", audioText: "も", strokeCount: 3, jlpt: "N5", courseLevel: 7,
+    meanings: ["hiragana mo"], romaji: ["mo"], readings: { kana: ["も"] },
+    svgPaths: [
+      "M49.17,14.75c1.88,1.88,1.86,4.52,1.12,8c-3,14.25-5,26.62-7,42.12c-2.55,19.73-0.75,29.88,17,29.86c20.25-0.02,28.63-13.11,20.01-35.73",
+      "M26.54,34.62c1.12,0.88,2.87,2.21,6,2c11.12-0.75,20-2.12,27.74-3.46c3.88-0.67,5.88-1.17,8.88-1.04",
+      "M26.42,53.38c-1.5,4,1,6.75,7.75,6.75c8.75,0,17.62-1,22.88-1.88c2.01-0.33,5.38-1,7.5-1.75",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 8 : Série Y やゆよ
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-ya", languageId: "lang-ja", courseId: "course-ja-char-8",
+    label: "や", audioText: "や", strokeCount: 3, jlpt: "N5", courseLevel: 8,
+    meanings: ["hiragana ya"], romaji: ["ya"], readings: { kana: ["や"] },
+    svgPaths: [
+      "M18,49.38c1.88,1.62,5.25,2.5,8.62,0.88c18.51-8.88,35.76-19.38,50.83-19.26c9.02,0.14,16.01,4.13,15.93,12.29c0,8.33-10.88,16.58-24.5,17.83",
+      "M47.13,15.88c5.12,0.88,10.41,4.05,11.5,6.62c2.12,5-1,2.38-2.88,2.62",
+      "M30,24.38c2.38,1.88,3.28,2.87,3.88,5.25c2.62,10.5,11.12,41.12,14.75,52.5c0.65,2.04,1.88,6.25,2.88,9.38",
+    ],
+  },
+  {
+    id: "hiragana-yu", languageId: "lang-ja", courseId: "course-ja-char-8",
+    label: "ゆ", audioText: "ゆ", strokeCount: 2, jlpt: "N5", courseLevel: 8,
+    meanings: ["hiragana yu"], romaji: ["yu"], readings: { kana: ["ゆ"] },
+    svgPaths: [
+      "M21.05,25.38c1.38,1.5,2.02,4.13,1.5,6.25c-2.88,11.75-4,22.25-2.12,35c2.77,18.85,1.12,3.88,3.25-1.5c9-22.75,27.24-34.5,44.38-34.5c16.88,0,21.88,11.38,21.88,20.25c0,27.38-30.88,29.62-43,16.75",
+      "M58.42,16.75c2.62,1.75,3.17,3.13,3.5,7.12c0.88,10.5,1.4,18.72,1.62,29.38c0.5,24-6.25,32-12.38,39.25",
+    ],
+  },
+  {
+    id: "hiragana-yo", languageId: "lang-ja", courseId: "course-ja-char-8",
+    label: "よ", audioText: "よ", strokeCount: 2, jlpt: "N5", courseLevel: 8,
+    meanings: ["hiragana yo"], romaji: ["yo"], readings: { kana: ["よ"] },
+    svgPaths: [
+      "M58.24,35.38c7.5-1.28,13.74-2.63,18.5-4.1c2.5-0.77,4.77-1.15,6.25-1.15",
+      "M54.62,13.88c2.25,2.12,2.98,4.13,2.88,6.5c-0.75,17-0.12,34.88,1.39,53.5c1.88,23.07-34.89,20.88-34.89,11.5c0-12,26.25-8,35.98-4.12c8.1,3.23,11.52,4.88,18.52,10.38",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 9 : Série R らりるれろ
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-ra", languageId: "lang-ja", courseId: "course-ja-char-9",
+    label: "ら", audioText: "ら", strokeCount: 2, jlpt: "N5", courseLevel: 9,
+    meanings: ["hiragana ra"], romaji: ["ra"], readings: { kana: ["ら"] },
+    svgPaths: [
+      "M35.33,15c3.75,3,9.22,4.41,16.5,4.25c11.12-0.25-0.25,2.38-1.25,3.5",
+      "M35.83,35.75c-2.14,4.34-2.79,8.67-3.11,13.24c-0.42,5.84-0.31,12.05-2.14,19.13c-3.16,12.27,1.49,4.77,3,3.5c11.88-10,21.7-12.67,32.61-12.49c9.21,0.15,16.85,5.19,16.76,13.88c-0.12,13.6-14.24,21.49-32.49,22.49",
+    ],
+  },
+  {
+    id: "hiragana-ri", languageId: "lang-ja", courseId: "course-ja-char-9",
+    label: "り", audioText: "り", strokeCount: 2, jlpt: "N5", courseLevel: 9,
+    meanings: ["hiragana ri"], romaji: ["ri"], readings: { kana: ["り"] },
+    svgPaths: [
+      "M38.75,25.25c1.25,1.5,2.24,4.03,1.62,6.62c-2.88,12.13-6.29,29.65-4.25,42.38c2,12.5,1.75-0.75,5.62-6.25",
+      "M69.37,18.75c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,0,26.38,0,35.75c0,16.5-5,25.75-12.62,33.12",
+    ],
+  },
+  {
+    id: "hiragana-ru", languageId: "lang-ja", courseId: "course-ja-char-9",
+    label: "る", audioText: "る", strokeCount: 1, jlpt: "N5", courseLevel: 9,
+    meanings: ["hiragana ru"], romaji: ["ru"], readings: { kana: ["る"] },
+    svgPaths: [
+      "M34.31,20.38c1.75,1.25,4.62,2.62,8.5,1.5c3.88-1.12,9.62-2.5,15.62-4.62c6-2.12,7.5-0.12,4.38,4.25c-3.12,4.37-18.89,24.62-27.75,34c-8.5,9-13.09,11.89,0.75,3.25c15.62-9.75,43-10.88,43,13.38c0,22.5-40.88,24.5-40.88,12.62c0-11.25,18.12-8.75,24.38-0.38",
+    ],
+  },
+  {
+    id: "hiragana-re", languageId: "lang-ja", courseId: "course-ja-char-9",
+    label: "れ", audioText: "れ", strokeCount: 2, jlpt: "N5", courseLevel: 9,
+    meanings: ["hiragana re"], romaji: ["re"], readings: { kana: ["れ"] },
+    svgPaths: [
+      "M34.48,13c1.5,1.38,2.83,3.74,2.5,6.38c-0.5,4-2.75,44.5-2.75,52.88c0,8.38,0.12,16.62,0.12,19.5",
+      "M16.98,40.75c2.12,1.38,3.74,1.46,7.5,0c4.5-1.75,6.55-2.66,13-5.5c4.25-1.88,4.4,0.24,2.5,3.5c-5.25,9-10.5,16.75-18.88,27.62c-7.55,9.81-6.93,12.85,3.25,3.12c14-13.38,20.34-19.76,33.88-32.5c6.38-6,19.39-12.09,18.14,0.88c-1.02,10.63-1.89,22.13-2.29,30.75c-1.02,21.71,11.53,18,20.15,8.63",
+    ],
+  },
+  {
+    id: "hiragana-ro", languageId: "lang-ja", courseId: "course-ja-char-9",
+    label: "ろ", audioText: "ろ", strokeCount: 1, jlpt: "N5", courseLevel: 9,
+    meanings: ["hiragana ro"], romaji: ["ro"], readings: { kana: ["ろ"] },
+    svgPaths: [
+      "M36.95,21.88c1.5,2,4.62,3.62,8.5,2.5c3.88-1.12,8.12-2.25,14.12-4.38c6-2.13,6.53-0.1,3.38,4.25c-7.88,10.88-18,22.75-27.5,35.25c-7.49,9.86-10.68,11.32,2.88,2.25c17.38-11.62,46.62-14,46.62,8.12c0,15.62-16,22.5-32.12,25.12",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HIRAGANA — Cours 10 : Série W わをん
+  // ════════════════════════════════════════════════════════════════════════════
+
+  {
+    id: "hiragana-wa", languageId: "lang-ja", courseId: "course-ja-char-10",
+    label: "わ", audioText: "わ", strokeCount: 2, jlpt: "N5", courseLevel: 10,
+    meanings: ["hiragana wa"], romaji: ["wa"], readings: { kana: ["わ"] },
+    svgPaths: [
+      "M38.53,14.75c1.5,1.38,2.22,3.73,2,6.38c-1,11.87-2.75,44.49-2.75,52.87c0,8.38-0.62,16.62-0.62,19.5",
+      "M17.53,40.75c2.12,1.38,3.68,1.3,7.5,0c5.88-2,9.8-3.16,16.25-6c4.25-1.88,6.12,0,2.75,4c-6.72,7.96-13,16.5-22.12,27.88c-7.75,9.66-7.54,12.21,3,2.88c21.88-19.38,49.75-35.62,63.5-21c14.36,15.27,1.62,36.62-23.38,42.62",
+    ],
+  },
+  {
+    id: "hiragana-wo", languageId: "lang-ja", courseId: "course-ja-char-10",
+    label: "を", audioText: "を", strokeCount: 3, jlpt: "N5", courseLevel: 10,
+    meanings: ["hiragana wo"], romaji: ["wo"], readings: { kana: ["を"] },
+    svgPaths: [
+      "M28.56,27.87c1.62,1.13,3.17,1.64,6.01,1.12c10.86-1.99,16.74-3.37,24.71-4.72c3.64-0.62,5.65-0.93,8.4-0.75",
+      "M49.93,14.38c0.75,1,1.48,3.22,0.38,5.62c-4.62,10.12-10,20.75-17.12,30.25c-9.25,12.33-9.25,11.19,2.12,2.5c9-6.88,23.75-12.12,22.88,19.88",
+      "M83.06,39.88c0.62,1.75,0,4-3,5.75c-3,1.75-49.62,24.16-44.75,38.25c3.28,9.48,17.93,9.12,29.98,7.75c4.48-0.51,9.15-1.12,12.4-1.75",
+    ],
+  },
+  {
+    id: "hiragana-n", languageId: "lang-ja", courseId: "course-ja-char-10",
+    label: "ん", audioText: "ん", strokeCount: 1, jlpt: "N5", courseLevel: 10,
+    meanings: ["hiragana n"], romaji: ["n"], readings: { kana: ["ん"] },
+    svgPaths: [
+      "M56.35,16.5c0.75,1.75,1.13,5.83-0.38,8.25c-7,11.25-27.22,43.47-33.88,54.37c-9,14.75-7.62,16.25,1.5,1.25c17.86-29.36,32-23.76,32-6.75c0,25,19,26.5,34.25-5",
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE — Cours 1 : Voyelles А О У И Э Е Ю Я
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-a", languageId: "lang-ru", courseId: "course-ru-char-1", label: "А", audioText: "А", strokeCount: 3, courseLevel: 1, meanings: ["voyelle a"],   romaji: ["a"],   svgPaths: ["M55,18L25,90", "M55,18L85,90", "M36,56L74,56"] },
+  { id: "cyrillic-o", languageId: "lang-ru", courseId: "course-ru-char-1", label: "О", audioText: "О", strokeCount: 1, courseLevel: 1, meanings: ["voyelle o"],   romaji: ["o"],   svgPaths: ["M54.5,18c-21,0,-36,16.5,-36,36.5c0,20,15,36.5,36,36.5c21,0,36.5,-16.5,36.5,-36.5c0,-20,-15.5,-36.5,-36.5,-36.5"] },
+  { id: "cyrillic-u", languageId: "lang-ru", courseId: "course-ru-char-1", label: "У", audioText: "У", strokeCount: 2, courseLevel: 1, meanings: ["voyelle ou"],  romaji: ["ou"],  svgPaths: ["M25,22L55,60", "M85,22L55,60L55,90"] },
+  { id: "cyrillic-i", languageId: "lang-ru", courseId: "course-ru-char-1", label: "И", audioText: "И", strokeCount: 3, courseLevel: 1, meanings: ["voyelle i"],   romaji: ["i"],   svgPaths: ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90"] },
+  { id: "cyrillic-e", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Э", audioText: "Э", strokeCount: 2, courseLevel: 1, meanings: ["voyelle é"],   romaji: ["é"],   svgPaths: ["M27,35c0,-18,56,-18,56,20c0,37,-56,37,-56,20", "M42,55L82,55"] },
+  { id: "cyrillic-ye", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Е", audioText: "Е", strokeCount: 4, courseLevel: 1, meanings: ["voyelle yé"],  romaji: ["yé"],  svgPaths: ["M28,20L28,90", "M28,20L80,20", "M28,55L72,55", "M28,90L80,90"] },
+  { id: "cyrillic-yu", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Ю", audioText: "Ю", strokeCount: 3, courseLevel: 1, meanings: ["voyelle you"], romaji: ["you"], svgPaths: ["M22,20L22,90", "M22,55L40,55", "M65,30c-13.8,0,-25,11.2,-25,25c0,13.8,11.2,25,25,25c13.8,0,25,-11.2,25,-25c0,-13.8,-11.2,-25,-25,-25"] },
+  { id: "cyrillic-ya", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Я", audioText: "Я", strokeCount: 3, courseLevel: 1, meanings: ["voyelle ya"],  romaji: ["ya"],  svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20", "M75,58L25,90"] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE — Cours 2 : Consonnes I — Н Т М К Л П С Р Б В
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-n", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Н", audioText: "Н", strokeCount: 3, courseLevel: 2, meanings: ["consonne n"], romaji: ["n"], svgPaths: ["M25,20L25,90", "M85,20L85,90", "M25,55L85,55"] },
+  { id: "cyrillic-t", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Т", audioText: "Т", strokeCount: 2, courseLevel: 2, meanings: ["consonne t"], romaji: ["t"], svgPaths: ["M20,22L89,22", "M54.5,22L54.5,90"] },
+  { id: "cyrillic-m", languageId: "lang-ru", courseId: "course-ru-char-2", label: "М", audioText: "М", strokeCount: 3, courseLevel: 2, meanings: ["consonne m"], romaji: ["m"], svgPaths: ["M20,90L20,20", "M20,20L54.5,60L89,20", "M89,20L89,90"] },
+  { id: "cyrillic-k", languageId: "lang-ru", courseId: "course-ru-char-2", label: "К", audioText: "К", strokeCount: 3, courseLevel: 2, meanings: ["consonne k"], romaji: ["k"], svgPaths: ["M25,20L25,90", "M25,55L80,20", "M25,55L80,90"] },
+  { id: "cyrillic-l", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Л", audioText: "Л", strokeCount: 2, courseLevel: 2, meanings: ["consonne l"], romaji: ["l"], svgPaths: ["M22,20L85,20L85,90", "M22,20L35,90"] },
+  { id: "cyrillic-p", languageId: "lang-ru", courseId: "course-ru-char-2", label: "П", audioText: "П", strokeCount: 3, courseLevel: 2, meanings: ["consonne p"], romaji: ["p"], svgPaths: ["M25,22L85,22", "M25,22L25,90", "M85,22L85,90"] },
+  { id: "cyrillic-s", languageId: "lang-ru", courseId: "course-ru-char-2", label: "С", audioText: "С", strokeCount: 1, courseLevel: 2, meanings: ["consonne s"], romaji: ["s"], svgPaths: ["M82,35c0,-18,-60,-18,-60,20c0,36,60,36,60,20"] },
+  { id: "cyrillic-r", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Р", audioText: "Р", strokeCount: 2, courseLevel: 2, meanings: ["consonne r"], romaji: ["r"], svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20"] },
+  { id: "cyrillic-b", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Б", audioText: "Б", strokeCount: 2, courseLevel: 2, meanings: ["consonne b"], romaji: ["b"], svgPaths: ["M80,20L25,20L25,90", "M25,55c10,0,50,-5,50,18c0,20,-28,18,-50,18"] },
+  { id: "cyrillic-v", languageId: "lang-ru", courseId: "course-ru-char-2", label: "В", audioText: "В", strokeCount: 3, courseLevel: 2, meanings: ["consonne v"], romaji: ["v"], svgPaths: ["M25,20L25,90", "M25,20c30,0,50,0,50,18c0,13,-20,17,-50,20", "M25,58c30,0,55,2,55,17c0,17,-25,15,-55,15"] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE — Cours 3 : Consonnes II — Г Д З Й Ф Х
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-g", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Г", audioText: "Г", strokeCount: 2, courseLevel: 3, meanings: ["consonne g"], romaji: ["g"], svgPaths: ["M22,20L85,20", "M22,20L22,90"] },
+  { id: "cyrillic-d", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Д", audioText: "Д", strokeCount: 3, courseLevel: 3, meanings: ["consonne d"], romaji: ["d"], svgPaths: ["M25,88L25,25L55,20L85,25L85,88", "M13,88L32,88", "M78,88L97,88"] },
+  { id: "cyrillic-z", languageId: "lang-ru", courseId: "course-ru-char-3", label: "З", audioText: "З", strokeCount: 2, courseLevel: 3, meanings: ["consonne z"], romaji: ["z"], svgPaths: ["M78,28C78,14 26,14 26,28C26,44 78,44 78,55", "M78,55C78,66 26,66 26,80C26,96 78,96 78,82"] },
+  { id: "cyrillic-j", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Й", audioText: "Й", strokeCount: 4, courseLevel: 3, meanings: ["consonne y"], romaji: ["y"], svgPaths: ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90", "M37,14C55,5 73,5 73,14"] },
+  { id: "cyrillic-f", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Ф", audioText: "Ф", strokeCount: 2, courseLevel: 3, meanings: ["consonne f"], romaji: ["f"], svgPaths: ["M54.5,15L54.5,94", "M54.5,32C33,32 18,43 18,55C18,67 33,78 54.5,78C76,78 91,67 91,55C91,43 76,32 54.5,32"] },
+  { id: "cyrillic-kh", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Х", audioText: "Х", strokeCount: 2, courseLevel: 3, meanings: ["consonne kh"], romaji: ["kh"], svgPaths: ["M22,20L88,90", "M88,20L22,90"] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE — Cours 4 : Consonnes III complexes — Ж Ц Ч Ш
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-zh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ж", audioText: "Ж", strokeCount: 3, courseLevel: 4, meanings: ["consonne zh"], romaji: ["zh"], svgPaths: ["M54.5,20L54.5,90", "M20,20L54.5,55L20,90", "M89,20L54.5,55L89,90"] },
+  { id: "cyrillic-ts", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ц", audioText: "Ц", strokeCount: 3, courseLevel: 4, meanings: ["consonne ts"], romaji: ["ts"], svgPaths: ["M25,22L25,90", "M85,22L85,90L95,90", "M25,90L85,90"] },
+  { id: "cyrillic-ch", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ч", audioText: "Ч", strokeCount: 2, courseLevel: 4, meanings: ["consonne tch"], romaji: ["tch"], svgPaths: ["M25,20C25,20 25,55 85,55", "M85,20L85,90"] },
+  { id: "cyrillic-sh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ш", audioText: "Ш", strokeCount: 4, courseLevel: 4, meanings: ["consonne ch"], romaji: ["ch"], svgPaths: ["M20,22L89,22", "M20,22L20,90", "M54.5,22L54.5,90", "M89,22L89,90"] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE — Cours 5 : Signes spéciaux — Щ Ъ Ы Ь Ё
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-shch", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Щ", audioText: "Щ", strokeCount: 4, courseLevel: 5, meanings: ["consonne chtch"], romaji: ["chtch"], svgPaths: ["M20,22L80,22", "M20,22L20,90", "M50,22L50,90", "M80,22L80,90L90,90"] },
+  { id: "cyrillic-hard-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ъ", audioText: "Ъ", strokeCount: 3, courseLevel: 5, meanings: ["signe dur"],    romaji: ["ʺ"],    svgPaths: ["M20,20L45,20", "M32,20L32,90", "M32,55C55,55 65,60 65,72C65,84 55,90 32,90"] },
+  { id: "cyrillic-yeru", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ы", audioText: "Ы", strokeCount: 3, courseLevel: 5, meanings: ["voyelle y"],    romaji: ["y"],    svgPaths: ["M22,20L22,90", "M22,55C45,55 55,60 55,72C55,84 45,90 22,90", "M72,20L72,90"] },
+  { id: "cyrillic-soft-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ь", audioText: "Ь", strokeCount: 2, courseLevel: 5, meanings: ["signe mou"],    romaji: ["ʹ"],    svgPaths: ["M25,20L25,90", "M25,55C55,55 65,60 65,72C65,84 55,90 25,90"] },
+  { id: "cyrillic-yo", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ё", audioText: "Ё", strokeCount: 6, courseLevel: 5, meanings: ["voyelle yo"],   romaji: ["yo"],   svgPaths: ["M28,22L28,90", "M28,22L80,22", "M28,56L72,56", "M28,90L80,90", "M36,10L44,10", "M62,10L70,10"] },
+];
+
+// ─── Mots ─────────────────────────────────────────────────────────────────────
+
+type WordSeed = { id: string; languageId: string; courseId: string; text: string; reading?: string; meaning: string; audioText?: string; courseLevel: number };
+
+const WORDS: WordSeed[] = [
+  // ── Japonais — Cours 1 : Nature & objets ──────────────────────────────────
+  { id: "ja-word-hi",    languageId: "lang-ja", courseId: "course-ja-word-1", text: "ひ",    reading: "hi",    meaning: "feu / soleil",   audioText: "ひ",    courseLevel: 1 },
+  { id: "ja-word-ki",    languageId: "lang-ja", courseId: "course-ja-word-1", text: "き",    reading: "ki",    meaning: "arbre",           audioText: "き",    courseLevel: 1 },
+  { id: "ja-word-mizu",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "みず",  reading: "mizu",  meaning: "eau",             audioText: "みず",  courseLevel: 1 },
+  { id: "ja-word-yama",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "やま",  reading: "yama",  meaning: "montagne",        audioText: "やま",  courseLevel: 1 },
+  { id: "ja-word-kawa",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "かわ",  reading: "kawa",  meaning: "rivière",         audioText: "かわ",  courseLevel: 1 },
+  { id: "ja-word-hana",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "はな",  reading: "hana",  meaning: "fleur",           audioText: "はな",  courseLevel: 1 },
+  { id: "ja-word-tsuki", languageId: "lang-ja", courseId: "course-ja-word-1", text: "つき",  reading: "tsuki", meaning: "lune",            audioText: "つき",  courseLevel: 1 },
+  { id: "ja-word-hoshi", languageId: "lang-ja", courseId: "course-ja-word-1", text: "ほし",  reading: "hoshi", meaning: "étoile",          audioText: "ほし",  courseLevel: 1 },
+
+  // ── Japonais — Cours 2 : Animaux & couleurs ───────────────────────────────
+  { id: "ja-word-inu",   languageId: "lang-ja", courseId: "course-ja-word-2", text: "いぬ",  reading: "inu",   meaning: "chien",           audioText: "いぬ",  courseLevel: 2 },
+  { id: "ja-word-neko",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "ねこ",  reading: "neko",  meaning: "chat",            audioText: "ねこ",  courseLevel: 2 },
+  { id: "ja-word-tori",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "とり",  reading: "tori",  meaning: "oiseau",          audioText: "とり",  courseLevel: 2 },
+  { id: "ja-word-sakana",languageId: "lang-ja", courseId: "course-ja-word-2", text: "さかな",reading: "sakana",meaning: "poisson",         audioText: "さかな",courseLevel: 2 },
+  { id: "ja-word-ao",    languageId: "lang-ja", courseId: "course-ja-word-2", text: "あお",  reading: "ao",    meaning: "bleu / vert",     audioText: "あお",  courseLevel: 2 },
+  { id: "ja-word-aka",   languageId: "lang-ja", courseId: "course-ja-word-2", text: "あか",  reading: "aka",   meaning: "rouge",           audioText: "あか",  courseLevel: 2 },
+  { id: "ja-word-shiro", languageId: "lang-ja", courseId: "course-ja-word-2", text: "しろ",  reading: "shiro", meaning: "blanc",           audioText: "しろ",  courseLevel: 2 },
+  { id: "ja-word-kuro",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "くろ",  reading: "kuro",  meaning: "noir",            audioText: "くろ",  courseLevel: 2 },
+
+  // ── Russe — Cours 1 : Famille & vie quotidienne ───────────────────────────
+  { id: "ru-word-mama",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "мама",  reading: "mama",  meaning: "maman",           audioText: "мама",  courseLevel: 1 },
+  { id: "ru-word-papa",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "папа",  reading: "papa",  meaning: "papa",            audioText: "папа",  courseLevel: 1 },
+  { id: "ru-word-dom",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "дом",   reading: "dom",   meaning: "maison",          audioText: "дом",   courseLevel: 1 },
+  { id: "ru-word-da",    languageId: "lang-ru", courseId: "course-ru-word-1", text: "да",    reading: "da",    meaning: "oui",             audioText: "да",    courseLevel: 1 },
+  { id: "ru-word-nyet",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "нет",   reading: "nyet",  meaning: "non",             audioText: "нет",   courseLevel: 1 },
+  { id: "ru-word-drug",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "друг",  reading: "drug",  meaning: "ami",             audioText: "друг",  courseLevel: 1 },
+  { id: "ru-word-mir",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "мир",   reading: "mir",   meaning: "monde / paix",    audioText: "мир",   courseLevel: 1 },
+  { id: "ru-word-kot",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "кот",   reading: "kot",   meaning: "chat (mâle)",     audioText: "кот",   courseLevel: 1 },
+
+  // ── Russe — Cours 2 : Nature & nourriture ─────────────────────────────────
+  { id: "ru-word-voda",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "вода",  reading: "voda",  meaning: "eau",             audioText: "вода",  courseLevel: 2 },
+  { id: "ru-word-khleb", languageId: "lang-ru", courseId: "course-ru-word-2", text: "хлеб",  reading: "khleb", meaning: "pain",            audioText: "хлеб",  courseLevel: 2 },
+  { id: "ru-word-les",   languageId: "lang-ru", courseId: "course-ru-word-2", text: "лес",   reading: "les",   meaning: "forêt",           audioText: "лес",   courseLevel: 2 },
+  { id: "ru-word-more",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "море",  reading: "morye", meaning: "mer",             audioText: "море",  courseLevel: 2 },
+  { id: "ru-word-gora",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "гора",  reading: "gora",  meaning: "montagne",        audioText: "гора",  courseLevel: 2 },
+  { id: "ru-word-reka",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "река",  reading: "reka",  meaning: "rivière",         audioText: "река",  courseLevel: 2 },
+  { id: "ru-word-ryba",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "рыба",  reading: "ryba",  meaning: "poisson",         audioText: "рыба",  courseLevel: 2 },
+  { id: "ru-word-moloko",languageId: "lang-ru", courseId: "course-ru-word-2", text: "молоко",reading: "moloko",meaning: "lait",            audioText: "молоко",courseLevel: 2 },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function log(msg: string) {
-  console.log(`  ${msg}`);
-}
+function log(msg: string) { process.stdout.write(`  ${msg}\n`); }
 
 // ─── Seed ─────────────────────────────────────────────────────────────────────
 
 async function seedLanguages() {
-  console.log("\n🌐 Languages...");
+  process.stdout.write("\n🌐 Languages...\n");
   for (const lang of LANGUAGES) {
     await db.language.upsert({
       where:  { id: lang.id },
@@ -261,11 +657,11 @@ async function seedLanguages() {
 }
 
 async function seedCourses() {
-  console.log("\n📚 Courses...");
+  process.stdout.write("\n📚 Courses...\n");
   for (const course of COURSES) {
     await db.course.upsert({
       where:  { id: course.id },
-      update: { title: course.title, description: course.description },
+      update: { title: course.title, description: course.description, type: course.type },
       create: course,
     });
     log(`✓ ${course.title}`);
@@ -273,7 +669,7 @@ async function seedCourses() {
 }
 
 async function seedCharacters() {
-  console.log("\n✍️  Characters...");
+  process.stdout.write("\n✍️  Characters...\n");
   for (const char of CHARACTERS) {
     const { svgPaths, meanings, romaji, readings, ...rest } = char;
     await db.character.upsert({
@@ -296,14 +692,27 @@ async function seedCharacters() {
   }
 }
 
-async function main() {
-  console.log("🌱 Seeding database...");
+async function seedWords() {
+  process.stdout.write("\n📖 Words...\n");
+  for (const word of WORDS) {
+    await db.word.upsert({
+      where:  { id: word.id },
+      update: { text: word.text, reading: word.reading ?? null, meaning: word.meaning },
+      create: word,
+    });
+    log(`✓ ${word.text}  (${word.meaning})`);
+  }
+}
 
+async function main() {
+  process.stdout.write("🌱 Seeding Sen database...\n");
   await seedLanguages();
   await seedCourses();
   await seedCharacters();
-
-  console.log(`\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length} courses, ${CHARACTERS.length} characters.\n`);
+  await seedWords();
+  process.stdout.write(
+    `\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length} courses, ${CHARACTERS.length} characters, ${WORDS.length} words.\n\n`,
+  );
 }
 
 main()
