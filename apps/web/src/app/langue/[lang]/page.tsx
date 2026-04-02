@@ -1,10 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { db } from "@repo/database/client";
-import { auth } from "@repo/auth/server";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cn } from "@repo/ui/lib/utils";
+import { getSession } from "../../../lib/auth-session";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -15,27 +14,32 @@ export default async function LangPage({ params }: Props) {
   const { lang: rawLang } = await params;
   const lang = decodeURIComponent(rawLang);
 
-  const session = await auth.api.getSession({ headers: await headers() });
+  // Parallelize session + language lookup (independent)
+  const [session, language] = await Promise.all([
+    getSession(),
+    db.language.findUnique({ where: { code: lang } }),
+  ]);
+
+  if (!language) notFound();
   const userId = session?.user.id ?? null;
 
-  const language = await db.language.findUnique({ where: { code: lang } });
-  if (!language) notFound();
-
-  const courses = await db.course.findMany({
-    where: { languageId: language.id, type: "character" },
-    orderBy: { level: "asc" },
-    include: { characters: { orderBy: { id: "asc" } } },
-  });
+  // Parallelize courses + progress (both depend on language, but not on each other)
+  const [courses, progressRows] = await Promise.all([
+    db.course.findMany({
+      where: { languageId: language.id, type: "character" },
+      orderBy: { level: "asc" },
+      include: { characters: { orderBy: { id: "asc" } } },
+    }),
+    userId
+      ? db.userProgress.findMany({
+        where: { userId, character: { languageId: language.id } },
+        select: { characterId: true, practiceLevel: true },
+      })
+      : Promise.resolve([]),
+  ]);
 
   // Per-character progress for the authenticated user
-  const progressByCharId = userId
-    ? await db.userProgress
-        .findMany({
-          where: { userId, character: { languageId: language.id } },
-          select: { characterId: true, practiceLevel: true },
-        })
-        .then((rows) => new Map(rows.map((r) => [r.characterId, r.practiceLevel])))
-    : new Map<string, number>();
+  const progressByCharId = new Map(progressRows.map((r) => [r.characterId, r.practiceLevel]));
 
   // Count mastered chars per course (practiceLevel = 2)
   const masteredByCourse = new Map<string, number>();

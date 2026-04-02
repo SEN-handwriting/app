@@ -1,8 +1,7 @@
-import { auth } from "@repo/auth/server";
 import { db } from "@repo/database/client";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getSession } from "../lib/auth-session";
 
 const languages = [
   { code: "ja-JP", name: "Japonais", flag: "🇯🇵", script: "Hiragana" },
@@ -10,7 +9,7 @@ const languages = [
 ];
 
 export default async function HomePage() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   if (session) {
     const lastSession = await db.practiceSession.findFirst({

@@ -1,18 +1,26 @@
 import React from "react";
 import Link from "next/link";
 import { db } from "@repo/database/client";
+import { unstable_cache } from "next/cache";
 
 const FLAG: Record<string, string> = {
   "ja-JP": "🇯🇵",
   "ru-RU": "🇷🇺",
 };
 
+const getLanguages = unstable_cache(
+  () =>
+    db.language.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      include: { _count: { select: { characters: true, courses: true } } },
+    }),
+  ["languages-list"],
+  { revalidate: 3600 }, // 1h — languages almost never change
+);
+
 export default async function LanguePage() {
-  const languages = await db.language.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-    include: { _count: { select: { characters: true, courses: true } } },
-  });
+  const languages = await getLanguages();
 
   return (
     <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
@@ -31,7 +39,7 @@ export default async function LanguePage() {
       </p>
 
       <div style={{ display: "grid", gap: "16px" }}>
-        {languages.map((lang) => (
+        {languages.map(lang => (
           <Link
             key={lang.id}
             href={`/langue/${encodeURIComponent(lang.code)}`}
@@ -48,12 +56,20 @@ export default async function LanguePage() {
                 gap: "20px",
               }}
             >
-              <span style={{ fontSize: "40px" }}>{FLAG[lang.code] ?? "🌐"}</span>
+              <span style={{ fontSize: "40px" }}>
+                {FLAG[lang.code] ?? "🌐"}
+              </span>
               <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: "22px", color: "#000", margin: 0 }}>
                   {lang.name}
                 </h2>
-                <p style={{ fontSize: "13px", color: "#666", margin: "4px 0 0 0" }}>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#666",
+                    margin: "4px 0 0 0",
+                  }}
+                >
                   {lang.script} · {lang._count.characters} caractères ·{" "}
                   {lang._count.courses} cours
                 </p>
@@ -65,8 +81,8 @@ export default async function LanguePage() {
 
         {languages.length === 0 && (
           <p style={{ color: "#999" }}>
-            Aucune langue disponible.{" "}
-            <code>bun run db:seed</code> pour peupler la base.
+            Aucune langue disponible. <code>bun run db:seed</code> pour peupler
+            la base.
           </p>
         )}
       </div>

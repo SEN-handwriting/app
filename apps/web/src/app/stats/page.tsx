@@ -1,8 +1,7 @@
-import { auth } from "@repo/auth/server";
 import { db } from "@repo/database/client";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getSession } from "../../lib/auth-session";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +28,7 @@ function last30Days(): string[] {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function StatsPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const userId = session.user.id;
