@@ -4,6 +4,7 @@ import { db } from "@repo/database/client";
 import { auth } from "@repo/auth/server";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { cn } from "@repo/ui/lib/utils";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -61,20 +62,30 @@ export default async function LangPage({ params }: Props) {
   }
 
   return (
-    <main style={{ padding: "40px", maxWidth: "1200px", margin: "0 auto" }}>
-      <Link href="/langue" style={{ color: "blue", textDecoration: "underline", fontSize: "16px" }}>
+    <main className="container mx-auto max-w-5xl px-4 py-8">
+      <Link
+        href="/langue"
+        className="text-zinc-400 hover:text-white text-sm transition-colors"
+      >
         ← Langues
       </Link>
 
-      <h1 style={{ fontSize: "36px", marginTop: "20px", marginBottom: "30px" }}>
-        {language.name} — {language.script}
+      <h1 className="text-3xl font-bold mt-5 mb-8">
+        {language.name}
+        {language.script && (
+          <span className="text-lg text-zinc-500 ml-3 font-normal">
+            {language.script}
+          </span>
+        )}
       </h1>
 
       {courses.length === 0 && (
-        <p style={{ color: "#999" }}>Aucun cours disponible. <code>bun run db:seed</code></p>
+        <p className="text-zinc-500">
+          Aucun cours disponible. <code className="text-zinc-400">bun run db:seed</code>
+        </p>
       )}
 
-      <div style={{ display: "grid", gap: "24px" }}>
+      <div className="grid gap-6">
         {courses.map((course) => {
           const chars = course.characters;
           const isLocked = lockedCourseIds.has(course.id);
@@ -85,36 +96,32 @@ export default async function LangPage({ params }: Props) {
           return (
             <div
               key={course.id}
-              style={{
-                border: `2px solid ${isLocked ? "#e5e7eb" : "#000"}`,
-                padding: "20px",
-                borderRadius: "8px",
-                background: isLocked ? "#f9fafb" : "#fff",
-                opacity: isLocked ? 0.7 : 1,
-                position: "relative",
-              }}
+              className={cn(
+                "rounded-xl border p-5 transition-opacity",
+                isLocked
+                  ? "border-zinc-800 bg-zinc-900/50 opacity-60"
+                  : "border-zinc-700 bg-zinc-900",
+              )}
             >
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                 <div>
-                  <h2 style={{ fontSize: "22px", margin: 0, color: isLocked ? "#9ca3af" : "#000" }}>
+                  <h2 className={cn("text-xl font-semibold", isLocked && "text-zinc-500")}>
                     {isLocked ? "🔒 " : ""}{course.title}
                   </h2>
                   {course.description && (
-                    <p style={{ fontSize: "13px", color: "#9ca3af", margin: "4px 0 0 0" }}>
-                      {course.description}
-                    </p>
+                    <p className="text-sm text-zinc-500 mt-1">{course.description}</p>
                   )}
                 </div>
-                <div style={{ textAlign: "right", fontSize: "13px", color: "#6b7280", flexShrink: 0, marginLeft: "16px" }}>
+                <div className="text-right text-sm text-zinc-500 shrink-0">
                   <div>{chars.length} caractère{chars.length > 1 ? "s" : ""}</div>
                   {userId && !isLocked && total > 0 && (
-                    <div style={{ marginTop: "4px", color: mastered === total ? "#16a34a" : "#6b7280" }}>
+                    <div className={cn("mt-1", mastered === total ? "text-green-400" : "text-zinc-500")}>
                       {mastered}/{total} maîtrisés ({masteredPct}%)
                     </div>
                   )}
                   {isLocked && (
-                    <div style={{ marginTop: "4px", color: "#9ca3af", fontSize: "12px" }}>
+                    <div className="mt-1 text-xs text-zinc-600">
                       Maîtrisez {Math.ceil(UNLOCK_THRESHOLD * 100)}% du cours précédent
                     </div>
                   )}
@@ -123,90 +130,66 @@ export default async function LangPage({ params }: Props) {
 
               {/* Progress bar */}
               {userId && !isLocked && total > 0 && (
-                <div style={{ marginBottom: "16px" }}>
-                  <div style={{ display: "flex", height: "6px", width: "100%", overflow: "hidden", borderRadius: "9999px", background: "#e5e7eb" }}>
-                    <div style={{ width: `${masteredPct}%`, background: "#22c55e", height: "100%", transition: "width 0.3s" }} />
+                <div className="mb-4">
+                  <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      className="bg-green-500 h-full transition-all duration-300"
+                      style={{ width: `${masteredPct}%` }}
+                    />
                   </div>
                 </div>
               )}
 
               {/* Character grid */}
-              {isLocked ? (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
-                  gap: "12px",
-                }}>
-                  {chars.map((c) => {
-                    const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))" }}>
+                {chars.map((c) => {
+                  const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
+
+                  if (isLocked) {
                     return (
                       <div
                         key={c.id}
-                        style={{
-                          border: "1px solid #e5e7eb",
-                          padding: "16px 8px",
-                          borderRadius: "8px",
-                          textAlign: "center",
-                          background: "#f3f4f6",
-                          cursor: "not-allowed",
-                        }}
+                        className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3 text-center cursor-not-allowed"
                       >
-                        <p style={{ fontSize: "34px", margin: 0, color: "#d1d5db" }}>{c.label}</p>
-                        {romaji && <p style={{ fontSize: "11px", marginTop: "4px", color: "#d1d5db" }}>{romaji}</p>}
+                        <p className="text-3xl text-zinc-600">{c.label}</p>
+                        {romaji && (
+                          <p className="text-xs mt-1 text-zinc-700">{romaji}</p>
+                        )}
                       </div>
                     );
-                  })}
-                </div>
-              ) : (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
-                  gap: "12px",
-                }}>
-                  {chars.map((c) => {
-                    const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
-                    const level = progressByCharId.get(c.id) ?? -1;
-                    // -1 = not started, 0 = started (full guide), 1 = dotted, 2 = mastered
-                    const borderColor = level >= 2 ? "#22c55e" : level >= 0 ? "#facc15" : "#e5e7eb";
-                    const bgColor = level >= 2 ? "#f0fdf4" : level >= 0 ? "#fefce8" : "#fff";
+                  }
 
-                    return (
-                      <Link
-                        key={c.id}
-                        href={`/langue/${encodeURIComponent(lang)}/${encodeURIComponent(c.id)}/learn`}
-                        style={{ textDecoration: "none" }}
+                  const level = progressByCharId.get(c.id) ?? -1;
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/langue/${encodeURIComponent(lang)}/${encodeURIComponent(c.id)}/learn`}
+                    >
+                      <div
+                        className={cn(
+                          "relative rounded-lg p-3 text-center transition-colors hover:brightness-110",
+                          level >= 2
+                            ? "border-2 border-green-500 bg-green-950/30"
+                            : level >= 0
+                              ? "border-2 border-yellow-500 bg-yellow-950/20"
+                              : "border border-zinc-700 bg-zinc-900 hover:border-zinc-500",
+                        )}
                       >
-                        <div style={{
-                          border: `2px solid ${borderColor}`,
-                          padding: "14px 8px",
-                          borderRadius: "8px",
-                          textAlign: "center",
-                          cursor: "pointer",
-                          background: bgColor,
-                          position: "relative",
-                        }}>
-                          {level >= 2 && (
-                            <span style={{
-                              position: "absolute", top: "4px", right: "4px",
-                              fontSize: "10px", color: "#16a34a",
-                            }}>⭐</span>
-                          )}
-                          {level === 1 && (
-                            <span style={{
-                              position: "absolute", top: "4px", right: "4px",
-                              fontSize: "10px", color: "#ca8a04",
-                            }}>✏️</span>
-                          )}
-                          <p style={{ fontSize: "34px", margin: 0, color: "#000" }}>{c.label}</p>
-                          {romaji && (
-                            <p style={{ fontSize: "11px", marginTop: "4px", color: "#6b7280" }}>{romaji}</p>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+                        {level >= 2 && (
+                          <span className="absolute top-1 right-1 text-[10px]">⭐</span>
+                        )}
+                        {level === 1 && (
+                          <span className="absolute top-1 right-1 text-[10px]">✏️</span>
+                        )}
+                        <p className="text-3xl">{c.label}</p>
+                        {romaji && (
+                          <p className="text-xs mt-1 text-zinc-400">{romaji}</p>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           );
         })}

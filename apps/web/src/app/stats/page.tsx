@@ -128,38 +128,40 @@ export default async function StatsPage() {
             href="/langue"
           />
         ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-[repeat(30,minmax(0,1fr))] gap-1">
-              {days.map((day) => {
-                const active = activeDays.has(day);
-                return (
-                  <div
-                    key={day}
-                    title={day}
-                    className={`aspect-square rounded-sm ${
-                      active
-                        ? "bg-green-500 opacity-80"
-                        : "bg-zinc-800"
-                    }`}
-                  />
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-[repeat(30,minmax(0,1fr))] gap-1">
-              {days.map((day) => {
-                const d = new Date(day + "T12:00:00");
-                const dow = d.getDay();
-                const showLabel = dow === 1 || dow === 3 || dow === 5;
-                return (
-                  <div
-                    key={day}
-                    className="text-center text-zinc-600"
-                    style={{ fontSize: "9px" }}
-                  >
-                    {showLabel ? DAY_LABELS[dow] : ""}
-                  </div>
-                );
-              })}
+          <div className="overflow-x-auto">
+            <div className="min-w-[480px] space-y-2">
+              <div className="grid grid-cols-[repeat(30,minmax(0,1fr))] gap-1">
+                {days.map((day) => {
+                  const active = activeDays.has(day);
+                  return (
+                    <div
+                      key={day}
+                      title={day}
+                      className={`aspect-square rounded-sm ${
+                        active
+                          ? "bg-green-500 opacity-80"
+                          : "bg-zinc-800"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-[repeat(30,minmax(0,1fr))] gap-1">
+                {days.map((day) => {
+                  const d = new Date(day + "T12:00:00");
+                  const dow = d.getDay();
+                  const showLabel = dow === 1 || dow === 3 || dow === 5;
+                  return (
+                    <div
+                      key={day}
+                      className="text-center text-zinc-600"
+                      style={{ fontSize: "9px" }}
+                    >
+                      {showLabel ? DAY_LABELS[dow] : ""}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

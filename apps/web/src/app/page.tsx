@@ -27,38 +27,23 @@ export default async function HomePage() {
   }
 
   return (
-    <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "48px", marginBottom: "10px" }}>Sen</h1>
-      <p style={{ fontSize: "18px", color: "#666", marginBottom: "40px" }}>
+    <main className="container mx-auto max-w-2xl px-4 py-12">
+      <h1 className="text-5xl font-bold mb-3">Sen</h1>
+      <p className="text-lg text-zinc-500 mb-10">
         Apprends à écrire les écritures du monde
       </p>
 
-      <div style={{ display: "grid", gap: "20px" }}>
+      <div className="grid gap-4">
         {languages.map((lang) => (
           <Link
             key={lang.code}
             href={`/langue/${encodeURIComponent(lang.code)}`}
-            style={{ textDecoration: "none" }}
           >
-            <div
-              style={{
-                border: "2px solid #000",
-                padding: "30px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "20px",
-              }}
-            >
-              <span style={{ fontSize: "48px" }}>{lang.flag}</span>
+            <div className="flex items-center gap-5 rounded-xl border border-zinc-800 bg-zinc-900 p-6 hover:border-zinc-600 transition-colors cursor-pointer">
+              <span className="text-5xl">{lang.flag}</span>
               <div>
-                <h2 style={{ fontSize: "24px", color: "#000", margin: 0 }}>
-                  {lang.name}
-                </h2>
-                <p style={{ fontSize: "14px", color: "#666", margin: "4px 0 0 0" }}>
-                  {lang.script}
-                </p>
+                <h2 className="text-xl font-semibold">{lang.name}</h2>
+                <p className="text-sm text-zinc-500 mt-1">{lang.script}</p>
               </div>
             </div>
           </Link>

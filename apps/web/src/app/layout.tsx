@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Sen } from "next/font/google";
 
 import "./globals.css";
@@ -22,6 +22,18 @@ const fontMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Sen — Learn the Line",
   description: "Apprends à écrire les écritures du monde",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Sen",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
