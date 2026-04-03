@@ -18,17 +18,17 @@ export function Navbar() {
   const close = () => setMenuOpen(false);
 
   return (
-    <div className="fixed top-0 z-50 w-full bg-black py-4">
+    <div className="fixed top-0 z-50 w-full bg-black/20 py-4 backdrop-blur-lg">
       <nav className="container mx-auto px-4">
         {/* Desktop row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-10">
-            <Link href="/" className="font-bold text-lg" onClick={close}>
+            <Link href="/" className="text-lg font-bold" onClick={close}>
               Sen
             </Link>
 
             {data?.user && (
-              <div className="hidden md:flex items-center gap-1">
+              <div className="hidden items-center gap-1 md:flex">
                 <NavbarLink href="/langue">Langues</NavbarLink>
                 <NavbarLink href="/mes-cours">Mes cours</NavbarLink>
                 <NavbarLink href="/stats">Stats</NavbarLink>
@@ -37,9 +37,12 @@ export function Navbar() {
           </div>
 
           {/* Right side desktop */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden items-center gap-4 md:flex">
             {data?.user ? (
-              <NavbarLink href="/profile" className="inline-flex items-center gap-2">
+              <NavbarLink
+                href="/profile"
+                className="inline-flex items-center gap-2"
+              >
                 <Avatar>
                   <AvatarImage
                     src={(data?.user.image ?? undefined) as string | undefined}
@@ -62,26 +65,26 @@ export function Navbar() {
 
           {/* Hamburger button — mobile only */}
           <button
-            className="md:hidden flex flex-col justify-center gap-1.5 p-2 -mr-2"
-            onClick={() => setMenuOpen((v) => !v)}
+            className="-mr-2 flex flex-col justify-center gap-1.5 p-2 md:hidden"
+            onClick={() => setMenuOpen(v => !v)}
             aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={menuOpen}
           >
             <span
               className={cn(
-                "block w-6 h-0.5 bg-white transition-all duration-200",
+                "block h-0.5 w-6 bg-white transition-all duration-200",
                 menuOpen && "translate-y-2 rotate-45",
               )}
             />
             <span
               className={cn(
-                "block w-6 h-0.5 bg-white transition-all duration-200",
+                "block h-0.5 w-6 bg-white transition-all duration-200",
                 menuOpen && "opacity-0",
               )}
             />
             <span
               className={cn(
-                "block w-6 h-0.5 bg-white transition-all duration-200",
+                "block h-0.5 w-6 bg-white transition-all duration-200",
                 menuOpen && "-translate-y-2 -rotate-45",
               )}
             />
@@ -90,22 +93,32 @@ export function Navbar() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-zinc-800 flex flex-col gap-1">
+          <div className="mt-4 flex flex-col gap-1 border-t border-zinc-800 pt-4 md:hidden">
             {data?.user ? (
               <>
-                <NavbarLink href="/langue" onClick={close}>Langues</NavbarLink>
-                <NavbarLink href="/mes-cours" onClick={close}>Mes cours</NavbarLink>
-                <NavbarLink href="/stats" onClick={close}>Stats</NavbarLink>
+                <NavbarLink href="/langue" onClick={close}>
+                  Langues
+                </NavbarLink>
+                <NavbarLink href="/mes-cours" onClick={close}>
+                  Mes cours
+                </NavbarLink>
+                <NavbarLink href="/stats" onClick={close}>
+                  Stats
+                </NavbarLink>
                 <NavbarLink
                   href="/profile"
-                  className="inline-flex items-center gap-2 mt-2"
+                  className="mt-2 inline-flex items-center gap-2"
                   onClick={close}
                 >
                   <Avatar>
                     <AvatarImage
-                      src={(data?.user.image ?? undefined) as string | undefined}
+                      src={
+                        (data?.user.image ?? undefined) as string | undefined
+                      }
                     />
-                    <AvatarFallback>{data?.user.name?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>
+                      {data?.user.name?.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                   <span>{data?.user.name}</span>
                 </NavbarLink>
@@ -113,10 +126,14 @@ export function Navbar() {
             ) : (
               <div className="flex gap-3 py-2">
                 <Button asChild variant="flat">
-                  <Link href="/sign-in" onClick={close}>Sign in</Link>
+                  <Link href="/sign-in" onClick={close}>
+                    Sign in
+                  </Link>
                 </Button>
                 <Button asChild color="secondary">
-                  <Link href="/sign-up" onClick={close}>Sign up</Link>
+                  <Link href="/sign-up" onClick={close}>
+                    Sign up
+                  </Link>
                 </Button>
               </div>
             )}
@@ -136,7 +153,7 @@ function NavbarLink({
     <Link
       {...props}
       className={cn(
-        "inline-flex items-center gap-2 rounded-xl px-4 py-2 hover:bg-zinc-900 transition-colors",
+        "inline-flex items-center gap-2 rounded-xl px-4 py-2 transition-colors hover:bg-zinc-900",
         className,
       )}
     >
