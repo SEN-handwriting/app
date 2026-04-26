@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import DrawCanvas, { DrawCanvasHandle } from "./DrawCanvas";
 import type { Character } from "../data/characters";
-import { validateCharacter, buildWaypoints, getRealtimeStatus } from "../lib/stroke-validator";
+import { validateCharacter, buildWaypoints, getRealtimeStatus, shouldAdvanceGate } from "../lib/stroke-validator";
 import type { LevelConfig } from "../lib/stroke-validator";
 
 const LEVEL_CONFIG: Array<LevelConfig & {
@@ -41,8 +41,10 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
   // Real-time gate tracking (all refs — no re-renders during drawing)
   const gateIndexRef = useRef(0);
   const currentStrokeIdxRef = useRef(0);
-const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
+  const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
   const practiceLevelRef = useRef(0);
+  // When true, level progression ignores the API response and advances locally (used by "Recommencer")
+  const isRestartModeRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => { practiceLevelRef.current = practiceLevel; }, [practiceLevel]);
@@ -64,6 +66,7 @@ const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([])
     setValidationFeedback(null);
     setIsCorrect(false);
     setJustMastered(false);
+    isRestartModeRef.current = false;
     canvasRef.current?.clear();
 
     fetch(`/api/progress?characterId=${encodeURIComponent(character.id)}`)
@@ -84,11 +87,12 @@ const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([])
     (point: { x: number; y: number }): "on" | "near" | "off" => {
       const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
       const waypoints = waypointsPerStrokeRef.current[currentStrokeIdxRef.current] ?? [];
-      const status = getRealtimeStatus(point, waypoints, gateIndexRef.current, config.tolerancePx);
-      if (status === "on" && gateIndexRef.current < waypoints.length - 1) {
+      // Gate advancement uses strict single-gate check
+      if (shouldAdvanceGate(point, waypoints, gateIndexRef.current, config.tolerancePx)) {
         gateIndexRef.current += 1;
       }
-      return status;
+      // Coloring uses a window of gates for smooth between-gate feedback
+      return getRealtimeStatus(point, waypoints, gateIndexRef.current, config.tolerancePx);
     },
     [],
   );
@@ -125,7 +129,11 @@ const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([])
         const levelAtAttempt = practiceLevelRef.current;
         setTimeout(async () => {
           const data = await apiCall;
-          const nextLevel = data?.practiceLevel ?? Math.min(5, levelAtAttempt + 1);
+          // In restart mode, progress locally level by level instead of jumping to the DB level
+          const nextLevel = isRestartModeRef.current
+            ? Math.min(LEVEL_CONFIG.length - 1, levelAtAttempt + 1)
+            : (data?.practiceLevel ?? Math.min(LEVEL_CONFIG.length - 1, levelAtAttempt + 1));
+          if (nextLevel >= LEVEL_CONFIG.length - 1) isRestartModeRef.current = false;
           const justGotMastered = nextLevel >= 5 && levelAtAttempt < 5;
           if (justGotMastered) setJustMastered(true);
           setPracticeLevel(nextLevel);
@@ -279,7 +287,7 @@ const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([])
           🗑️ Effacer
         </button>
         <button
-          onClick={() => { setPracticeLevel(0); setJustMastered(false); handleClear(); }}
+          onClick={() => { isRestartModeRef.current = true; setPracticeLevel(0); setJustMastered(false); handleClear(); }}
           style={{
             flex: 1, padding: "12px",
             background: "#6b7280", color: "white",

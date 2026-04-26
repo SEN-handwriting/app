@@ -254,8 +254,24 @@ function distance(p1: Point, p2: Point): number {
 }
 
 /**
- * Real-time proximity check: is the current pen position near gate[gateIndex]?
- * Returns "on" (within tolerance), "near" (within 1.8×tolerance), or "off".
+ * Returns true if the point is close enough to the current gate to advance to the next one.
+ * Separated from getRealtimeStatus so coloring can use a looser window while gate
+ * advancement stays strict.
+ */
+export function shouldAdvanceGate(
+  point: Point,
+  waypoints: Point[],
+  gateIndex: number,
+  tolerancePx: number,
+): boolean {
+  if (gateIndex >= waypoints.length - 1) return false;
+  return distance(point, waypoints[gateIndex]!) <= tolerancePx;
+}
+
+/**
+ * Real-time proximity check for coloring only.
+ * Checks a window of gates around gateIndex so the stroke stays green/yellow
+ * between consecutive gates, not just exactly on each gate.
  */
 export function getRealtimeStatus(
   point: Point,
@@ -263,11 +279,27 @@ export function getRealtimeStatus(
   gateIndex: number,
   tolerancePx: number,
 ): "on" | "near" | "off" {
-  // gateIndex past end means all gates satisfied — colour the rest green
-  if (waypoints.length === 0 || gateIndex >= waypoints.length) return "on";
-  const d = distance(point, waypoints[gateIndex]!);
-  if (d <= tolerancePx) return "on";
-  if (d <= tolerancePx * 1.8) return "near";
+  if (waypoints.length === 0) return "off";
+
+  if (gateIndex >= waypoints.length) {
+    const last = waypoints[waypoints.length - 1]!;
+    const d = distance(point, last);
+    if (d <= tolerancePx * 1.5) return "on";
+    if (d <= tolerancePx * 2.5) return "near";
+    return "off";
+  }
+
+  // Look at a window of gates (one behind, two ahead) so transitions between
+  // gates don't flash red — the user is on the path even between two gates.
+  const start = Math.max(0, gateIndex - 1);
+  const end = Math.min(waypoints.length - 1, gateIndex + 2);
+  let minDist = Infinity;
+  for (let i = start; i <= end; i++) {
+    minDist = Math.min(minDist, distance(point, waypoints[i]!));
+  }
+
+  if (minDist <= tolerancePx) return "on";
+  if (minDist <= tolerancePx * 1.6) return "near";
   return "off";
 }
 
@@ -289,9 +321,78 @@ export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
   sequentialThreshold: 60,
 };
 
+function pathLength(points: Point[]): number {
+  let len = 0;
+  for (let i = 1; i < points.length; i++) len += distance(points[i - 1]!, points[i]!);
+  return len;
+}
+
+/**
+ * Detects aller-retour by projecting every user point onto the stroke's main axis
+ * and measuring the largest backward movement relative to the stroke length.
+ * Returns 100 if the user barely backtracks, 0 for a full aller-retour.
+ */
+function computeBacktrackScore(user: Point[], waypoints: Point[]): number {
+  if (waypoints.length < 2 || user.length < 3) return 100;
+  const wStart = waypoints[0]!;
+  const wEnd = waypoints[waypoints.length - 1]!;
+  const totalDist = distance(wStart, wEnd);
+  if (totalDist < 15) return 100; // very short stroke — skip
+  const dx = (wEnd.x - wStart.x) / totalDist;
+  const dy = (wEnd.y - wStart.y) / totalDist;
+
+  let maxProj = (user[0]!.x - wStart.x) * dx + (user[0]!.y - wStart.y) * dy;
+  let maxBacktrack = 0;
+  for (const p of user) {
+    const proj = (p.x - wStart.x) * dx + (p.y - wStart.y) * dy;
+    if (proj > maxProj) maxProj = proj;
+    else maxBacktrack = Math.max(maxBacktrack, maxProj - proj);
+  }
+
+  // Normalize: fraction of total stroke length that the user went backward.
+  // Allow up to 25% (natural corrections, hooks); hard-fail at 75%+.
+  const r = maxBacktrack / totalDist;
+  if (r <= 0.25) return 100;
+  if (r >= 0.75) return 0;
+  return Math.round(100 - ((r - 0.25) / 0.50) * 100);
+}
+
+/**
+ * Detects lateral detours using a SEQUENTIAL dense gate.
+ *
+ * The key insight: checking against all 40 waypoints spatially fails on curves
+ * because a "future" waypoint (e.g. the bottom-left of a C-curve) can be close
+ * to where the user deviated higher up. By advancing the dense gate only when
+ * the user is genuinely near it (tight 15 px tolerance), a lateral deviation
+ * keeps the gate stuck at the correct position and the distance is measured
+ * honestly against that position, not a future one.
+ */
+function computeExcursionScore(user: Point[], denseWaypoints: Point[], tolerancePx: number): number {
+  if (denseWaypoints.length === 0 || user.length === 0) return 100;
+
+  const ADVANCE_TOL = 15; // px — tight so curved future gates can't absorb a deviation
+  let gate = 0;
+  let maxExcursion = 0;
+
+  for (const p of user) {
+    // Advance sequential gate only when genuinely close (not just spatially near a future gate)
+    while (gate < denseWaypoints.length - 1 && distance(p, denseWaypoints[gate]!) <= ADVANCE_TOL) {
+      gate++;
+    }
+    maxExcursion = Math.max(maxExcursion, distance(p, denseWaypoints[gate]!));
+  }
+
+  // Score 100 within tolerancePx, 0 at 1.5× tolerancePx.
+  // isValid threshold 40 → fails when maxExcursion > 1.3× tolerancePx (~58 px at level 0).
+  if (maxExcursion <= tolerancePx) return 100;
+  if (maxExcursion >= tolerancePx * 1.5) return 0;
+  return Math.round(100 - ((maxExcursion - tolerancePx) / (tolerancePx * 0.5)) * 100);
+}
+
 function scoreStrokeSequential(
   user: Point[],
   waypoints: Point[],
+  denseWaypoints: Point[],
   config: LevelConfig,
   debug = false,
 ): StrokeResult {
@@ -299,7 +400,7 @@ function scoreStrokeSequential(
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
 
-  // Direction (30%) — dot product of overall start→end vectors
+  // Direction (15%) — dot product of overall start→end vectors
   const uStart = user[0]!, uEnd = user[user.length - 1]!;
   const wStart = waypoints[0]!, wEnd = waypoints[waypoints.length - 1]!;
   const uVec = { x: uEnd.x - uStart.x, y: uEnd.y - uStart.y };
@@ -309,7 +410,7 @@ function scoreStrokeSequential(
   const dot = (uVec.x / uLen) * (wVec.x / wLen) + (uVec.y / uLen) * (wVec.y / wLen);
   const directionScore = ((dot + 1) / 2) * 100;
 
-  // Sequential gate coverage (70%)
+  // Sequential gate coverage (45%)
   // Each gate must be reached by a user point that comes AFTER the user point that reached the previous gate.
   let gatesPassed = 0;
   let searchFrom = 0;
@@ -323,18 +424,43 @@ function scoreStrokeSequential(
     }
   }
   const coverageScore = (gatesPassed / waypoints.length) * 100;
-  const score = directionScore * 0.30 + coverageScore * 0.70;
+
+  // Efficiency (10%) — ratio of user path length to expected path length.
+  // A lateral zigzag draws 3-5× more than needed.
+  const expectedLen = pathLength(waypoints);
+  const userLen = pathLength(user);
+  const ratio = expectedLen > 0 ? userLen / expectedLen : 1;
+  const efficiencyScore = ratio <= 2.0
+    ? 100
+    : Math.max(0, Math.round(100 - ((ratio - 2.0) / 2.5) * 100));
+
+  // Backtrack (15%) — detects aller-retour: going forward then coming back.
+  const backtrackScore = computeBacktrackScore(user, waypoints);
+
+  // Excursion (15%) — detects lateral detours: how far did the user stray from the path?
+  // Uses dense waypoints (40 pts) so a "future" waypoint on a curve can't absorb a real detour.
+  const excursionScore = computeExcursionScore(user, denseWaypoints, config.tolerancePx);
+
+  const score = directionScore * 0.15 + coverageScore * 0.45 + efficiencyScore * 0.10 + backtrackScore * 0.15 + excursionScore * 0.15;
   const isValid =
     coverageScore >= config.sequentialThreshold &&
-    directionScore >= 45;
+    directionScore >= 45 &&
+    efficiencyScore >= 30 &&
+    backtrackScore >= 40 &&
+    excursionScore >= 40; // fails when user was more than 1.6× tolerancePx from the path
 
   if (debug) {
     console.log('🎯 scoreStrokeSequential:', {
       waypoints: waypoints.length,
+      denseWaypoints: denseWaypoints.length,
       gatesPassed,
       tolerancePx: config.tolerancePx,
       directionScore: Math.round(directionScore),
       coverageScore: Math.round(coverageScore),
+      efficiencyScore: Math.round(efficiencyScore),
+      backtrackScore: Math.round(backtrackScore),
+      excursionScore: Math.round(excursionScore),
+      ratio: Math.round(ratio * 10) / 10,
       score: Math.round(score),
       isValid,
     });
@@ -342,8 +468,11 @@ function scoreStrokeSequential(
 
   let feedback: string;
   if (!isValid) {
-    if (directionScore < 45) feedback = '⚠️ La direction du trait est incorrecte';
-    else feedback = '⚠️ Le tracé ne suit pas assez la forme';
+    if (backtrackScore < 40)      feedback = '⚠️ Trace le trait sans revenir en arrière';
+    else if (excursionScore < 40) feedback = '⚠️ Ne t\'écarte pas autant du tracé';
+    else if (directionScore < 45) feedback = '⚠️ La direction du trait est incorrecte';
+    else if (efficiencyScore < 30) feedback = '⚠️ Trace le trait d\'un seul geste, sans zigzaguer';
+    else                          feedback = '⚠️ Le tracé ne suit pas assez la forme';
   } else {
     if (score >= 90)      feedback = '🎉 Parfait !';
     else if (score >= 78) feedback = '👍 Très bien !';
@@ -371,8 +500,11 @@ export function validateStroke(
   if (waypoints.length === 0) {
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
+  // Dense waypoints used only for excursion checking — tight spacing (~7 px) prevents a
+  // curve's "future" segment from absorbing a real lateral detour at an earlier position.
+  const denseWaypoints = buildWaypoints(svgPath, 40, canvasSize, svgSize);
   const user = simplifyStroke(userStroke, 3);
-  return scoreStrokeSequential(user, waypoints, levelConfig, debug);
+  return scoreStrokeSequential(user, waypoints, denseWaypoints, levelConfig, debug);
 }
 
 export function validateCharacter(
