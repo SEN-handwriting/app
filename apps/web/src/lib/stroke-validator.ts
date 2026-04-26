@@ -20,6 +20,12 @@ export interface CharacterResult {
   feedback: string;
 }
 
+export interface LevelConfig {
+  waypointN: number;
+  tolerancePx: number;
+  sequentialThreshold: number;
+}
+
 // ─── SVG Sampling ─────────────────────────────────────────────────────────────
 
 function sampleCubicBezier(
@@ -204,6 +210,17 @@ function parseSvgPath(pathD: string): Point[] {
   return points;
 }
 
+// Exported for use by DrawCanvas dots guide mode — uses the full dense parseSvgPath sampling.
+/** Sample SVG-space points at given fractional positions (0.0–1.0) along a path. */
+export function samplePathPoints(pathD: string, fractions: number[]): Point[] {
+  const all = parseSvgPath(pathD);
+  if (all.length === 0) return [];
+  return fractions.map(f => {
+    const idx = Math.round(f * (all.length - 1));
+    return all[Math.max(0, Math.min(idx, all.length - 1))]!;
+  });
+}
+
 // ─── Geometry Helpers ─────────────────────────────────────────────────────────
 
 function normalizePoints(points: Point[], canvasSize = 300, svgSize = 109): Point[] {
@@ -211,8 +228,47 @@ function normalizePoints(points: Point[], canvasSize = 300, svgSize = 109): Poin
   return points.map(p => ({ x: p.x * scale, y: p.y * scale }));
 }
 
+/**
+ * Extract n evenly-spaced waypoints from an SVG path, in canvas pixel space.
+ * Used by PracticeGrid to precompute gates and by the sequential scorer.
+ */
+export function buildWaypoints(
+  svgPath: string,
+  n: number,
+  canvasSize = 300,
+  svgSize = 109,
+): Point[] {
+  const all = normalizePoints(parseSvgPath(svgPath), canvasSize, svgSize);
+  if (all.length === 0 || n <= 0) return [];
+  if (n === 1) return [all[Math.round((all.length - 1) / 2)]!];
+  const result: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const idx = Math.round((i / (n - 1)) * (all.length - 1));
+    result.push(all[idx]!);
+  }
+  return result;
+}
+
 function distance(p1: Point, p2: Point): number {
   return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+}
+
+/**
+ * Real-time proximity check: is the current pen position near gate[gateIndex]?
+ * Returns "on" (within tolerance), "near" (within 1.8×tolerance), or "off".
+ */
+export function getRealtimeStatus(
+  point: Point,
+  waypoints: Point[],
+  gateIndex: number,
+  tolerancePx: number,
+): "on" | "near" | "off" {
+  // gateIndex past end means all gates satisfied — colour the rest green
+  if (waypoints.length === 0 || gateIndex >= waypoints.length) return "on";
+  const d = distance(point, waypoints[gateIndex]!);
+  if (d <= tolerancePx) return "on";
+  if (d <= tolerancePx * 1.8) return "near";
+  return "off";
 }
 
 function simplifyStroke(points: Point[], tolerance = 5): Point[] {
@@ -225,91 +281,58 @@ function simplifyStroke(points: Point[], tolerance = 5): Point[] {
   return out;
 }
 
-function centroid(points: Point[]): Point {
-  if (points.length === 0) return { x: 0, y: 0 };
-  const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-  return { x: sum.x / points.length, y: sum.y / points.length };
-}
-
-/** Diagonal of the bounding box — used to derive adaptive coverage tolerance. */
-function strokeBoundingDiagonal(points: Point[]): number {
-  if (points.length === 0) return 100;
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const p of points) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-  return Math.sqrt((maxX - minX) ** 2 + (maxY - minY) ** 2);
-}
-
 // ─── Stroke Scoring ──────────────────────────────────────────────────────────
 
-/**
- * Score a user stroke against a reference path.
- *
- * Philosophy: shape matters, exact position does not.
- * The user stroke is centroid-aligned to the reference before scoring —
- * small positional offsets are forgiven, wrong shapes are not.
- *
- * Metrics:
- *   70% – path coverage  : does the stroke pass near every reference point?
- *   30% – direction      : does it go the right way (catches reversed strokes)?
- *
- * Coverage tolerance adapts to stroke extent: short strokes require more
- * precision, long strokes get more absolute slack.
- */
-function scoreStroke(user: Point[], ref: Point[], debug = false): StrokeResult {
-  if (user.length < 3 || ref.length < 3) {
+export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
+  waypointN: 8,
+  tolerancePx: 38,
+  sequentialThreshold: 60,
+};
+
+function scoreStrokeSequential(
+  user: Point[],
+  waypoints: Point[],
+  config: LevelConfig,
+  debug = false,
+): StrokeResult {
+  if (user.length < 3 || waypoints.length === 0) {
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
 
-  // ── 1. Direction (30%) ────────────────────────────────────────────────────
+  // Direction (30%) — dot product of overall start→end vectors
   const uStart = user[0]!, uEnd = user[user.length - 1]!;
-  const rStart = ref[0]!,  rEnd = ref[ref.length - 1]!;
+  const wStart = waypoints[0]!, wEnd = waypoints[waypoints.length - 1]!;
   const uVec = { x: uEnd.x - uStart.x, y: uEnd.y - uStart.y };
-  const rVec = { x: rEnd.x - rStart.x, y: rEnd.y - rStart.y };
+  const wVec = { x: wEnd.x - wStart.x, y: wEnd.y - wStart.y };
   const uLen = Math.sqrt(uVec.x ** 2 + uVec.y ** 2) || 1;
-  const rLen = Math.sqrt(rVec.x ** 2 + rVec.y ** 2) || 1;
-  const dot = (uVec.x / uLen) * (rVec.x / rLen) + (uVec.y / uLen) * (rVec.y / rLen);
-  const directionScore = ((dot + 1) / 2) * 100; // 0–100
+  const wLen = Math.sqrt(wVec.x ** 2 + wVec.y ** 2) || 1;
+  const dot = (uVec.x / uLen) * (wVec.x / wLen) + (uVec.y / uLen) * (wVec.y / wLen);
+  const directionScore = ((dot + 1) / 2) * 100;
 
-  // ── 2. Centroid alignment ─────────────────────────────────────────────────
-  // Translate user stroke so its centroid matches the reference centroid.
-  // This forgives small positional errors without accepting wrong shapes.
-  const refC = centroid(ref);
-  const userC = centroid(user);
-  const dx = refC.x - userC.x;
-  const dy = refC.y - userC.y;
-  const alignedUser = user.map(p => ({ x: p.x + dx, y: p.y + dy }));
-
-  // ── 3. Path coverage (70%) ────────────────────────────────────────────────
-  // Tolerance scales with the stroke's bounding diagonal so that short strokes
-  // require more precision and long strokes get proportionally more slack.
-  const diagonal = strokeBoundingDiagonal(ref);
-  const COVERAGE_TOLERANCE = Math.max(diagonal * 0.28, 35);
-
-  let totalCoverage = 0;
-  for (const rPt of ref) {
-    let minDist = Infinity;
-    for (const uPt of alignedUser) {
-      const d = distance(uPt, rPt);
-      if (d < minDist) minDist = d;
+  // Sequential gate coverage (70%)
+  // Each gate must be reached by a user point that comes AFTER the user point that reached the previous gate.
+  let gatesPassed = 0;
+  let searchFrom = 0;
+  for (const gate of waypoints) {
+    for (let i = searchFrom; i < user.length; i++) {
+      if (distance(user[i]!, gate) <= config.tolerancePx) {
+        gatesPassed++;
+        searchFrom = i + 1;
+        break;
+      }
     }
-    totalCoverage += Math.max(0, 100 - (minDist / COVERAGE_TOLERANCE) * 100);
   }
-  const coverageScore = totalCoverage / ref.length;
-
+  const coverageScore = (gatesPassed / waypoints.length) * 100;
   const score = directionScore * 0.30 + coverageScore * 0.70;
-  const isValid = coverageScore >= 45 && directionScore >= 50 && score >= 52;
+  const isValid =
+    coverageScore >= config.sequentialThreshold &&
+    directionScore >= 45;
 
   if (debug) {
-    console.log('🎯 scoreStroke:', {
-      refPoints: ref.length,
-      userPoints: user.length,
-      centroidOffset: { dx: Math.round(dx), dy: Math.round(dy) },
-      adaptiveTolerance: Math.round(COVERAGE_TOLERANCE),
+    console.log('🎯 scoreStrokeSequential:', {
+      waypoints: waypoints.length,
+      gatesPassed,
+      tolerancePx: config.tolerancePx,
       directionScore: Math.round(directionScore),
       coverageScore: Math.round(coverageScore),
       score: Math.round(score),
@@ -319,8 +342,8 @@ function scoreStroke(user: Point[], ref: Point[], debug = false): StrokeResult {
 
   let feedback: string;
   if (!isValid) {
-    if (directionScore < 50) feedback = '⚠️ La direction du trait est incorrecte';
-    else                     feedback = '⚠️ Le tracé ne suit pas assez la forme';
+    if (directionScore < 45) feedback = '⚠️ La direction du trait est incorrecte';
+    else feedback = '⚠️ Le tracé ne suit pas assez la forme';
   } else {
     if (score >= 90)      feedback = '🎉 Parfait !';
     else if (score >= 78) feedback = '👍 Très bien !';
@@ -336,27 +359,28 @@ function scoreStroke(user: Point[], ref: Point[], debug = false): StrokeResult {
 export function validateStroke(
   userStroke: Point[],
   svgPath: string,
-  options: { canvasSize?: number; svgSize?: number; debug?: boolean } = {},
+  options: {
+    canvasSize?: number;
+    svgSize?: number;
+    debug?: boolean;
+    levelConfig?: LevelConfig;
+  } = {},
 ): StrokeResult {
-  const { canvasSize = 300, svgSize = 109, debug = false } = options;
-
-  const refPoints = normalizePoints(parseSvgPath(svgPath), canvasSize, svgSize);
-
-  if (refPoints.length === 0) {
+  const { canvasSize = 300, svgSize = 109, debug = false, levelConfig = DEFAULT_LEVEL_CONFIG } = options;
+  const waypoints = buildWaypoints(svgPath, levelConfig.waypointN, canvasSize, svgSize);
+  if (waypoints.length === 0) {
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
-
   const user = simplifyStroke(userStroke, 3);
-  const ref  = simplifyStroke(refPoints, 2);
-  return scoreStroke(user, ref, debug);
+  return scoreStrokeSequential(user, waypoints, levelConfig, debug);
 }
 
 export function validateCharacter(
   userStrokes: Point[][],
   svgPaths: string[],
-  options: { debug?: boolean } = {},
+  options: { debug?: boolean; levelConfig?: LevelConfig } = {},
 ): CharacterResult {
-  const { debug = false } = options;
+  const { debug = false, levelConfig = DEFAULT_LEVEL_CONFIG } = options;
 
   if (userStrokes.length !== svgPaths.length) {
     return {
@@ -368,7 +392,7 @@ export function validateCharacter(
   }
 
   const strokeResults = userStrokes.map((stroke, i) =>
-    validateStroke(stroke, svgPaths[i]!, { debug }),
+    validateStroke(stroke, svgPaths[i]!, { debug, levelConfig }),
   );
 
   const score = strokeResults.reduce((s, r) => s + r.score, 0) / strokeResults.length;

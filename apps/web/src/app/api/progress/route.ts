@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   });
 
   const currentLevel = existing?.practiceLevel ?? 0;
-  const newLevel = isSuccess ? Math.min(2, currentLevel + 1) : currentLevel;
+  const newLevel = isSuccess ? Math.min(5, currentLevel + 1) : currentLevel;
 
   await db.userProgress.upsert({
     where: { userId_characterId: { userId, characterId } },
@@ -105,5 +105,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ practiceLevel: newLevel, mastered: newLevel >= 2 });
+  return NextResponse.json({ practiceLevel: newLevel, mastered: newLevel >= 5 });
 }

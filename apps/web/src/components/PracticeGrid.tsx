@@ -1,15 +1,27 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import DrawCanvas, { DrawCanvasHandle } from "./DrawCanvas";
 import type { Character } from "../data/characters";
-import { validateCharacter } from "../lib/stroke-validator";
+import { validateCharacter, buildWaypoints, getRealtimeStatus } from "../lib/stroke-validator";
+import type { LevelConfig } from "../lib/stroke-validator";
+
+const LEVEL_CONFIG: Array<LevelConfig & {
+  guide: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots" | undefined;
+  label: string;
+  step: string;
+}> = [
+  { guide: "full-thick",   waypointN: 6,  tolerancePx: 45, sequentialThreshold: 55, label: "Étape 1",  step: "Suis le tracé épais" },
+  { guide: "full",         waypointN: 8,  tolerancePx: 38, sequentialThreshold: 60, label: "Étape 2",  step: "Tracé visible" },
+  { guide: "dotted-dense", waypointN: 8,  tolerancePx: 30, sequentialThreshold: 65, label: "Étape 3",  step: "Pointillés denses" },
+  { guide: "dotted",       waypointN: 10, tolerancePx: 25, sequentialThreshold: 70, label: "Étape 4",  step: "Pointillés épars" },
+  { guide: "dots",         waypointN: 10, tolerancePx: 20, sequentialThreshold: 72, label: "Étape 5",  step: "Quelques repères" },
+  { guide: undefined,      waypointN: 12, tolerancePx: 18, sequentialThreshold: 75, label: "Étape 6",  step: "De mémoire 🎯" },
+];
 
 interface PracticeGridProps {
   character: Character;
 }
-
-type GuideMode = "full" | "dotted" | "empty";
 
 interface ValidationFeedback {
   isValid: boolean;
@@ -18,13 +30,32 @@ interface ValidationFeedback {
 }
 
 export default function PracticeGrid({ character }: PracticeGridProps) {
-  const [attempts, setAttempts] = useState(0);
+  const [practiceLevel, setPracticeLevel] = useState(0);
   const [isLoadingLevel, setIsLoadingLevel] = useState(true);
   const [currentStrokes, setCurrentStrokes] = useState<Array<Array<{ x: number; y: number }>>>([]);
   const [validationFeedback, setValidationFeedback] = useState<ValidationFeedback | null>(null);
   const [isCorrect, setIsCorrect] = useState(false);
   const [justMastered, setJustMastered] = useState(false);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
+
+  // Real-time gate tracking (all refs — no re-renders during drawing)
+  const gateIndexRef = useRef(0);
+  const currentStrokeIdxRef = useRef(0);
+const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
+  const practiceLevelRef = useRef(0);
+
+  // Keep refs in sync with state
+  useEffect(() => { practiceLevelRef.current = practiceLevel; }, [practiceLevel]);
+
+  // Precompute waypoints whenever character or practiceLevel changes
+  useEffect(() => {
+    const config = LEVEL_CONFIG[Math.min(practiceLevel, LEVEL_CONFIG.length - 1)]!;
+    waypointsPerStrokeRef.current = character.svgPaths.map(path =>
+      buildWaypoints(path, config.waypointN, 300),
+    );
+    gateIndexRef.current = 0;
+    currentStrokeIdxRef.current = 0;
+  }, [character, practiceLevel]);
 
   // Load current practiceLevel from DB on character change
   useEffect(() => {
@@ -36,84 +67,98 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
     canvasRef.current?.clear();
 
     fetch(`/api/progress?characterId=${encodeURIComponent(character.id)}`)
-      .then((r) => r.json())
+      .then(r => r.json())
       .then((data: { practiceLevel: number }) => {
-        setAttempts(data.practiceLevel ?? 0);
+        setPracticeLevel(data.practiceLevel ?? 0);
       })
-      .catch(() => {
-        setAttempts(0);
-      })
+      .catch(() => setPracticeLevel(0))
       .finally(() => setIsLoadingLevel(false));
   }, [character.id]);
 
-  const getGuideMode = (level: number): GuideMode => {
-    if (level === 0) return "full";
-    if (level === 1) return "dotted";
-    return "empty";
-  };
+  const onStrokeStart = useCallback((completedCount: number) => {
+    currentStrokeIdxRef.current = completedCount;
+    gateIndexRef.current = 0;
+  }, []);
 
-  const handleStrokeComplete = (strokes: Array<Array<{ x: number; y: number }>>) => {
-    setCurrentStrokes(strokes);
-    setValidationFeedback(null);
+  const onRealtimeFeedback = useCallback(
+    (point: { x: number; y: number }): "on" | "near" | "off" => {
+      const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
+      const waypoints = waypointsPerStrokeRef.current[currentStrokeIdxRef.current] ?? [];
+      const status = getRealtimeStatus(point, waypoints, gateIndexRef.current, config.tolerancePx);
+      if (status === "on" && gateIndexRef.current < waypoints.length - 1) {
+        gateIndexRef.current += 1;
+      }
+      return status;
+    },
+    [],
+  );
 
-    if (strokes.length !== character.svgPaths.length) return;
+  const handleStrokeComplete = useCallback(
+    (strokes: Array<Array<{ x: number; y: number }>>) => {
+      setCurrentStrokes(strokes);
+      setValidationFeedback(null);
 
-    const result = validateCharacter(strokes, character.svgPaths, { debug: true });
+      if (strokes.length !== character.svgPaths.length) return;
 
-    setValidationFeedback({
-      isValid: result.isValid,
-      score: result.score,
-      feedback: result.feedback,
-    });
-    setIsCorrect(result.isValid);
+      const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
+      const result = validateCharacter(strokes, character.svgPaths, {
+        debug: process.env.NODE_ENV === "development",
+        levelConfig: {
+          waypointN: config.waypointN,
+          tolerancePx: config.tolerancePx,
+          sequentialThreshold: config.sequentialThreshold,
+        },
+      });
 
-    // Fire API call immediately (background for failures, awaited for successes)
-    const apiCall = fetch("/api/progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        characterId: character.id,
-        score: result.score,
-        isSuccess: result.isValid,
-      }),
-    })
-      .then((r) => (r.ok ? (r.json() as Promise<{ practiceLevel: number; mastered: boolean }>) : null))
-      .catch(() => null);
+      setValidationFeedback({ isValid: result.isValid, score: result.score, feedback: result.feedback });
+      setIsCorrect(result.isValid);
 
-    if (result.isValid) {
-      const levelAtAttempt = attempts;
-      setTimeout(async () => {
-        const data = await apiCall;
-        const nextLevel = data?.practiceLevel ?? Math.min(2, levelAtAttempt + 1);
-        const justGotMastered = nextLevel >= 2 && levelAtAttempt < 2;
+      const apiCall = fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ characterId: character.id, score: result.score, isSuccess: result.isValid }),
+      })
+        .then(r => (r.ok ? (r.json() as Promise<{ practiceLevel: number; mastered: boolean }>) : null))
+        .catch(() => null);
 
-        if (justGotMastered) setJustMastered(true);
-        setAttempts(nextLevel);
-        setCurrentStrokes([]);
-        setValidationFeedback(null);
-        setIsCorrect(false);
-        canvasRef.current?.clear();
-      }, 1500);
-    }
-  };
+      if (result.isValid) {
+        const levelAtAttempt = practiceLevelRef.current;
+        setTimeout(async () => {
+          const data = await apiCall;
+          const nextLevel = data?.practiceLevel ?? Math.min(5, levelAtAttempt + 1);
+          const justGotMastered = nextLevel >= 5 && levelAtAttempt < 5;
+          if (justGotMastered) setJustMastered(true);
+          setPracticeLevel(nextLevel);
+          setCurrentStrokes([]);
+          setValidationFeedback(null);
+          setIsCorrect(false);
+          gateIndexRef.current = 0;
+          currentStrokeIdxRef.current = 0;
+          canvasRef.current?.clear();
+        }, 1500);
+      }
+    },
+    [character],
+  );
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     canvasRef.current?.clear();
     setCurrentStrokes([]);
     setIsCorrect(false);
     setValidationFeedback(null);
-  };
-
-  const guideMode = getGuideMode(attempts);
-  const isMastered = attempts >= 2;
+    gateIndexRef.current = 0;
+    currentStrokeIdxRef.current = 0;
+  }, []);
 
   if (isLoadingLevel) {
     return <div style={{ padding: "20px", color: "#666", fontSize: "14px" }}>Chargement de votre progression…</div>;
   }
 
+  const config = LEVEL_CONFIG[Math.min(practiceLevel, LEVEL_CONFIG.length - 1)]!;
+  const isMastered = practiceLevel >= 5;
+
   return (
     <div>
-      {/* Mastered / just-mastered banners */}
       {justMastered && (
         <div style={{
           marginBottom: "12px", padding: "12px 16px",
@@ -134,22 +179,33 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
         </div>
       )}
 
-      {/* Current mode label */}
-      <div style={{ marginBottom: "16px", fontSize: "14px", color: "#666" }}>
-        {guideMode === "full"   && <p>📝 <strong>Étape 1</strong> — Suivez le tracé complet</p>}
-        {guideMode === "dotted" && <p>✏️ <strong>Étape 2</strong> — Suivez les pointillés</p>}
-        {guideMode === "empty"  && <p>🎯 <strong>De mémoire</strong> — À vous de jouer !</p>}
+      {/* Level progress bar */}
+      <div style={{ marginBottom: "12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px", color: "#9ca3af" }}>
+          <span>{config.label} — {config.step}</span>
+          <span>{Math.min(practiceLevel, 5)}/5</span>
+        </div>
+        <div style={{ background: "#e5e7eb", borderRadius: "4px", height: "6px" }}>
+          <div style={{
+            background: isMastered ? "#22c55e" : "#3b82f6",
+            borderRadius: "4px",
+            height: "6px",
+            width: `${(Math.min(practiceLevel, 5) / 5) * 100}%`,
+            transition: "width 0.5s ease",
+          }} />
+        </div>
       </div>
 
-      {/* Canvas + overlays */}
       <div style={{ position: "relative", display: "inline-block" }}>
         <DrawCanvas
           ref={canvasRef}
           width={300}
           height={300}
           onStrokeComplete={handleStrokeComplete}
-          guidePaths={guideMode !== "empty" ? character.svgPaths : undefined}
-          guideMode={guideMode !== "empty" ? guideMode : undefined}
+          onStrokeStart={onStrokeStart}
+          onRealtimeFeedback={onRealtimeFeedback}
+          guidePaths={config.guide ? character.svgPaths : undefined}
+          guideMode={config.guide}
           borderColor={
             isCorrect
               ? "#22c55e"
@@ -161,7 +217,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
           }
         />
 
-        {/* Success indicator */}
         {isCorrect && (
           <div style={{
             position: "absolute", top: "50%", left: "50%",
@@ -173,7 +228,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
           }}>✓</div>
         )}
 
-        {/* Error indicator */}
         {validationFeedback && !validationFeedback.isValid &&
           currentStrokes.length === character.svgPaths.length && (
           <div style={{
@@ -186,7 +240,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
           }}>✗</div>
         )}
 
-        {/* Stroke counter */}
         {currentStrokes.length > 0 && (
           <div style={{
             position: "absolute", bottom: "12px", right: "12px",
@@ -199,7 +252,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
         )}
       </div>
 
-      {/* Validation feedback */}
       {validationFeedback && currentStrokes.length === character.svgPaths.length && (
         <div style={{
           marginTop: "16px", padding: "12px",
@@ -214,7 +266,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
         </div>
       )}
 
-      {/* Buttons */}
       <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
         <button
           onClick={handleClear}
@@ -228,7 +279,7 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
           🗑️ Effacer
         </button>
         <button
-          onClick={() => { setAttempts(0); setJustMastered(false); handleClear(); }}
+          onClick={() => { setPracticeLevel(0); setJustMastered(false); handleClear(); }}
           style={{
             flex: 1, padding: "12px",
             background: "#6b7280", color: "white",
@@ -238,19 +289,6 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
         >
           🔄 Recommencer
         </button>
-      </div>
-
-      {/* Progress level */}
-      <div style={{
-        marginTop: "16px", padding: "12px",
-        background: "#f3f4f6", borderRadius: "8px", fontSize: "14px",
-      }}>
-        <p style={{ margin: 0, color: "#374151" }}>
-          <strong>Niveau :</strong>{" "}
-          {attempts === 0 && "Débutant (tracé visible)"}
-          {attempts === 1 && "Intermédiaire (pointillés)"}
-          {attempts >= 2 && "Maîtrisé (de mémoire) ⭐"}
-        </p>
       </div>
 
       <style jsx>{`

@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { samplePathPoints } from "../lib/stroke-validator";
 
 export type DrawCanvasHandle = {
   clear: () => void;
@@ -17,11 +18,13 @@ interface DrawCanvasProps {
   width?: number;
   height?: number;
   onStrokeComplete?: (strokes: Array<{ x: number; y: number }[]>) => void;
+  onStrokeStart?: (completedCount: number) => void;
+  onRealtimeFeedback?: (point: { x: number; y: number }) => "on" | "near" | "off";
   borderColor?: string;
   /** SVG paths (109×109 viewBox) to draw as a guide on the canvas */
   guidePaths?: string[];
-  /** "full" = solid gray, "dotted" = dashed lighter gray */
-  guideMode?: "full" | "dotted";
+  /** Guide rendering mode */
+  guideMode?: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots";
 }
 
 // Draws guide paths directly on the canvas context (behind user strokes).
@@ -29,32 +32,42 @@ interface DrawCanvasProps {
 function paintGuide(
   ctx: CanvasRenderingContext2D,
   paths: string[] | undefined,
-  mode: "full" | "dotted" | undefined,
+  mode: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots" | undefined,
   logicalWidth: number,
 ) {
   if (!paths || paths.length === 0 || !mode) return;
   const scale = logicalWidth / 109;
   ctx.save();
   ctx.scale(scale, scale);
-  ctx.strokeStyle = mode === "full" ? "#cccccc" : "#e0e0e0";
-  ctx.lineWidth = 3 / scale;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.setLineDash(mode === "dotted" ? [5 / scale, 5 / scale] : []);
-  for (const d of paths) {
-    try {
-      ctx.stroke(new Path2D(d));
-    } catch {
-      // ignore malformed paths
+
+  if (mode === "dots") {
+    ctx.fillStyle = "#c0c0c0";
+    for (const d of paths) {
+      const dotPts = samplePathPoints(d, [0.1, 0.25, 0.5, 0.75, 0.9]);
+      for (const pt of dotPts) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4 / scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else {
+    ctx.strokeStyle =
+      mode === "full-thick" ? "#aaaaaa" :
+      mode === "full"       ? "#cccccc" : "#e0e0e0";
+    ctx.lineWidth =
+      mode === "full-thick" ? 8 / scale : 3 / scale;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.setLineDash(
+      mode === "dotted-dense" ? [4 / scale, 4 / scale] :
+      mode === "dotted"       ? [5 / scale, 5 / scale] : [],
+    );
+    for (const d of paths) {
+      try { ctx.stroke(new Path2D(d)); } catch { /* ignore malformed */ }
     }
   }
+
   ctx.restore();
-  // Reset context for user strokes
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.setLineDash([]);
 }
 
 export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
@@ -63,6 +76,8 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       width = 300,
       height = 300,
       onStrokeComplete,
+      onStrokeStart,
+      onRealtimeFeedback,
       borderColor = "#ddd",
       guidePaths,
       guideMode,
@@ -153,14 +168,15 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       const c = canvasRef.current;
       if (!c) return;
 
+      const REALTIME_COLORS = { on: "#22c55e", near: "#f59e0b", off: "#ef4444" } as const;
+
       const onPointerDown = (ev: PointerEvent) => {
         drawing.current = true;
-        try {
-          c.setPointerCapture(ev.pointerId);
-        } catch {}
+        try { c.setPointerCapture(ev.pointerId); } catch {}
         const pos = getPos(ev);
         last.current = pos;
         currentStroke.current = [pos];
+        onStrokeStart?.(allStrokes.current.length);
       };
 
       const onPointerMove = (ev: PointerEvent) => {
@@ -168,6 +184,14 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         const p = getPos(ev);
         const ctx = c.getContext("2d");
         if (!ctx) return;
+
+        if (onRealtimeFeedback) {
+          const status = onRealtimeFeedback(p);
+          ctx.strokeStyle = REALTIME_COLORS[status];
+        } else {
+          ctx.strokeStyle = "#000";
+        }
+
         ctx.beginPath();
         ctx.moveTo(last.current.x, last.current.y);
         ctx.lineTo(p.x, p.y);
@@ -179,16 +203,15 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       const onPointerUp = (ev: PointerEvent) => {
         if (drawing.current && currentStroke.current.length > 0) {
           allStrokes.current.push([...currentStroke.current]);
-          if (onStrokeComplete) {
-            onStrokeComplete(allStrokes.current);
-          }
+          onStrokeComplete?.(allStrokes.current);
         }
         drawing.current = false;
-        try {
-          c.releasePointerCapture(ev.pointerId);
-        } catch {}
+        try { c.releasePointerCapture(ev.pointerId); } catch {}
         last.current = null;
         currentStroke.current = [];
+        // Reset to default color for next stroke
+        const ctx = c.getContext("2d");
+        if (ctx) ctx.strokeStyle = "#000";
       };
 
       c.addEventListener("pointerdown", onPointerDown);
@@ -200,7 +223,7 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("pointerup", onPointerUp);
       };
-    }, [onStrokeComplete]);
+    }, [onStrokeComplete, onStrokeStart, onRealtimeFeedback]);
 
     return (
       <div style={{ position: "relative", display: "inline-block" }}>
