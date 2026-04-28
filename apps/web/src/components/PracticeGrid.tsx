@@ -21,6 +21,7 @@ const LEVEL_CONFIG: Array<LevelConfig & {
 
 interface PracticeGridProps {
   character: Character;
+  onSuccess?: () => void;
 }
 
 interface ValidationFeedback {
@@ -29,7 +30,7 @@ interface ValidationFeedback {
   feedback: string;
 }
 
-export default function PracticeGrid({ character }: PracticeGridProps) {
+export default function PracticeGrid({ character, onSuccess }: PracticeGridProps) {
   const [practiceLevel, setPracticeLevel] = useState(0);
   const [isLoadingLevel, setIsLoadingLevel] = useState(true);
   const [currentStrokes, setCurrentStrokes] = useState<Array<Array<{ x: number; y: number }>>>([]);
@@ -143,6 +144,7 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
           gateIndexRef.current = 0;
           currentStrokeIdxRef.current = 0;
           canvasRef.current?.clear();
+          onSuccess?.();
         }, 1500);
       }
     },
@@ -299,7 +301,7 @@ export default function PracticeGrid({ character }: PracticeGridProps) {
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes popIn {
           0%   { transform: translate(-50%, -50%) scale(0); }
           50%  { transform: translate(-50%, -50%) scale(1.1); }

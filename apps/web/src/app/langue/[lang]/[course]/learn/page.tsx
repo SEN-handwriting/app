@@ -15,9 +15,7 @@ export default function LearnPage() {
   const rawCourse = params?.course;
 
   const lang = Array.isArray(rawLang) ? rawLang[0] : (rawLang ?? "");
-  const courseParam = Array.isArray(rawCourse)
-    ? rawCourse[0]
-    : (rawCourse ?? "");
+  const courseParam = Array.isArray(rawCourse) ? (rawCourse[0] ?? "") : (rawCourse ?? "");
 
   let characterId = "";
   try {
@@ -38,7 +36,7 @@ export default function LearnPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-10">
         <Link href={`/langue/${lang}`} className="text-zinc-400 hover:text-white text-sm transition-colors">
           ← Retour
         </Link>
@@ -49,7 +47,7 @@ export default function LearnPage() {
 
   if (isError || !character) {
     return (
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-10">
         <Link href={`/langue/${lang}`} className="text-zinc-400 hover:text-white text-sm transition-colors">
           ← Retour aux cours
         </Link>
@@ -60,88 +58,90 @@ export default function LearnPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 py-8">
+    <main className="container mx-auto max-w-5xl px-4 py-6 pb-24 md:pb-10">
       <Link
         href={`/langue/${lang}`}
-        className="text-zinc-400 hover:text-white text-sm transition-colors"
+        className="inline-flex items-center text-zinc-400 hover:text-white text-sm transition-colors py-1"
       >
         ← Retour aux cours
       </Link>
 
-      <h1 className="text-3xl font-bold mt-5 mb-8">
-        {character.label}
+      {/* Header */}
+      <div className="mt-4 mb-6 flex items-baseline gap-3">
+        <h1 className="text-4xl font-bold">{character.label}</h1>
         {character.romaji?.[0] && (
-          <span className="text-lg text-zinc-500 ml-4 font-normal">
-            {character.romaji[0]}
-          </span>
+          <span className="text-lg text-zinc-500 font-normal">{character.romaji[0]}</span>
         )}
-      </h1>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
         {/* Colonne gauche : Modèle */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Modèle</h2>
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-zinc-300">Modèle</h2>
           <CharacterPreview
             ref={previewRef}
             character={character}
             showStrokes={showStrokes}
           />
 
-          <div className="flex flex-wrap gap-2 mt-5">
+          {/* Boutons actions — taille tactile confortable */}
+          <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setShowStrokes(!showStrokes)}
-              className="px-4 py-2 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
             >
-              {showStrokes ? "Masquer" : "Afficher"} traits
+              {showStrokes ? "Cacher" : "Traits"}
             </button>
             <button
               onClick={() => previewRef.current?.replay()}
-              className="px-4 py-2 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
             >
               Rejouer
             </button>
             <button
               onClick={() => previewRef.current?.speak()}
-              className="px-4 py-2 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
             >
-              🔊 Écouter
+              🔊
             </button>
           </div>
 
-          <div className="mt-6 text-sm text-zinc-400 space-y-1.5">
-            {character.meanings && (
-              <p>
-                <span className="text-white font-medium">Signification :</span>{" "}
-                {character.meanings.join(", ")}
-              </p>
-            )}
-            {character.readings?.kana && (
-              <p>
-                <span className="text-white font-medium">Lecture :</span>{" "}
-                {character.readings.kana.join(", ")}
-              </p>
-            )}
-            {character.jlpt && (
-              <p>
-                <span className="text-white font-medium">JLPT :</span>{" "}
-                {character.jlpt}
-              </p>
-            )}
-            {character.strokeCount && (
-              <p>
-                <span className="text-white font-medium">Nombre de traits :</span>{" "}
-                {character.strokeCount}
-              </p>
-            )}
-          </div>
+          {/* Infos caractère */}
+          {(character.meanings || character.readings?.kana || character.jlpt || character.strokeCount) && (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-2 text-sm">
+              {character.meanings && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-500 shrink-0">Sens</span>
+                  <span className="text-zinc-200">{character.meanings.join(", ")}</span>
+                </div>
+              )}
+              {character.readings?.kana && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-500 shrink-0">Lecture</span>
+                  <span className="text-zinc-200">{character.readings.kana.join(", ")}</span>
+                </div>
+              )}
+              {character.jlpt && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-500 shrink-0">JLPT</span>
+                  <span className="text-zinc-200">{character.jlpt}</span>
+                </div>
+              )}
+              {character.strokeCount && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-500 shrink-0">Traits</span>
+                  <span className="text-zinc-200">{character.strokeCount}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Colonne droite : Zone de pratique */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Zone de pratique</h2>
-          <p className="text-sm text-zinc-500 mb-4">
-            Tracé complet → pointillés → vide. Le carré passe
-            automatiquement au niveau suivant quand vous réussissez !
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-zinc-300">Zone de pratique</h2>
+          <p className="text-xs text-zinc-500">
+            Tracé complet → pointillés → vide. Réussis pour avancer automatiquement !
           </p>
           <PracticeGrid character={character} />
         </div>

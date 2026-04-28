@@ -338,6 +338,10 @@ function computeBacktrackScore(user: Point[], waypoints: Point[]): number {
   const wEnd = waypoints[waypoints.length - 1]!;
   const totalDist = distance(wStart, wEnd);
   if (totalDist < 15) return 100; // very short stroke — skip
+  // For highly curved strokes (arc much longer than straight line, e.g. stroke 2 of あ),
+  // projecting onto start→end axis produces false backtrack signals — bypass the check.
+  const arcLen = pathLength(waypoints);
+  if (arcLen > 0 && totalDist / arcLen < 0.55) return 100;
   const dx = (wEnd.x - wStart.x) / totalDist;
   const dy = (wEnd.y - wStart.y) / totalDist;
 
@@ -411,10 +415,25 @@ function scoreStrokeSequential(
   const directionScore = ((dot + 1) / 2) * 100;
 
   // Sequential gate coverage (45%)
-  // Each gate must be reached by a user point that comes AFTER the user point that reached the previous gate.
+  // Merge waypoints that are closer than tolerancePx/2: a single user point within tolerance
+  // of the first gate is guaranteed to also satisfy the second, so counting them separately
+  // would unfairly penalise short strokes (e.g. stroke 3 of あ) where the user has fewer
+  // captured points than waypoints.
+  const halfTol = config.tolerancePx * 0.5;
+  const effectiveWaypoints: Point[] = [waypoints[0]!];
+  for (let gi = 1; gi < waypoints.length; gi++) {
+    if (distance(effectiveWaypoints[effectiveWaypoints.length - 1]!, waypoints[gi]!) >= halfTol) {
+      effectiveWaypoints.push(waypoints[gi]!);
+    }
+  }
+  // Always keep the last waypoint so end-of-stroke is always checked
+  if (effectiveWaypoints[effectiveWaypoints.length - 1] !== waypoints[waypoints.length - 1]) {
+    effectiveWaypoints.push(waypoints[waypoints.length - 1]!);
+  }
+
   let gatesPassed = 0;
   let searchFrom = 0;
-  for (const gate of waypoints) {
+  for (const gate of effectiveWaypoints) {
     for (let i = searchFrom; i < user.length; i++) {
       if (distance(user[i]!, gate) <= config.tolerancePx) {
         gatesPassed++;
@@ -423,7 +442,7 @@ function scoreStrokeSequential(
       }
     }
   }
-  const coverageScore = (gatesPassed / waypoints.length) * 100;
+  const coverageScore = (gatesPassed / effectiveWaypoints.length) * 100;
 
   // Efficiency (10%) — ratio of user path length to expected path length.
   // A lateral zigzag draws 3-5× more than needed.
@@ -452,6 +471,7 @@ function scoreStrokeSequential(
   if (debug) {
     console.log('🎯 scoreStrokeSequential:', {
       waypoints: waypoints.length,
+      effectiveWaypoints: effectiveWaypoints.length,
       denseWaypoints: denseWaypoints.length,
       gatesPassed,
       tolerancePx: config.tolerancePx,

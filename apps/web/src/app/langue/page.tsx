@@ -16,76 +16,47 @@ const getLanguages = unstable_cache(
       include: { _count: { select: { characters: true, courses: true } } },
     }),
   ["languages-list"],
-  { revalidate: 3600 }, // 1h — languages almost never change
+  { revalidate: 3600 },
 );
 
 export default async function LanguePage() {
   const languages = await getLanguages();
 
   return (
-    <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      <Link
-        href="/"
-        style={{ color: "blue", textDecoration: "underline", fontSize: "16px" }}
-      >
+    <main className="container mx-auto max-w-2xl px-4 py-6 pb-24 md:pb-10">
+      <Link href="/" className="inline-flex items-center text-zinc-400 hover:text-white text-sm transition-colors py-1">
         ← Accueil
       </Link>
 
-      <h1 style={{ fontSize: "36px", marginTop: "20px", marginBottom: "8px" }}>
-        Langues disponibles
-      </h1>
-      <p style={{ color: "#666", marginBottom: "32px" }}>
-        Choisissez une langue pour accéder aux cours.
-      </p>
+      <div className="mt-4 mb-6">
+        <h1 className="text-2xl font-bold">Langues disponibles</h1>
+        <p className="text-zinc-400 text-sm mt-1">Choisis une langue pour accéder aux cours.</p>
+      </div>
 
-      <div style={{ display: "grid", gap: "16px" }}>
-        {languages.map(lang => (
-          <Link
-            key={lang.id}
-            href={`/langue/${encodeURIComponent(lang.code)}`}
-            style={{ textDecoration: "none" }}
-          >
-            <div
-              style={{
-                border: "2px solid #000",
-                padding: "24px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "20px",
-              }}
+      {languages.length === 0 ? (
+        <p className="text-zinc-500 text-sm">
+          Aucune langue disponible. <code className="text-zinc-400">bun run db:seed</code>
+        </p>
+      ) : (
+        <div className="grid gap-3">
+          {languages.map((lang) => (
+            <Link
+              key={lang.id}
+              href={`/langue/${encodeURIComponent(lang.code)}`}
+              className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 transition-colors active:bg-zinc-800"
             >
-              <span style={{ fontSize: "40px" }}>
-                {FLAG[lang.code] ?? "🌐"}
-              </span>
-              <div style={{ flex: 1 }}>
-                <h2 style={{ fontSize: "22px", color: "#000", margin: 0 }}>
-                  {lang.name}
-                </h2>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#666",
-                    margin: "4px 0 0 0",
-                  }}
-                >
-                  {lang.script} · {lang._count.characters} caractères ·{" "}
-                  {lang._count.courses} cours
+              <span className="text-4xl">{FLAG[lang.code] ?? "🌐"}</span>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold">{lang.name}</h2>
+                <p className="text-sm text-zinc-400 mt-0.5">
+                  {lang.script} · {lang._count.characters} caractères · {lang._count.courses} cours
                 </p>
               </div>
-              <span style={{ fontSize: "20px", color: "#999" }}>→</span>
-            </div>
-          </Link>
-        ))}
-
-        {languages.length === 0 && (
-          <p style={{ color: "#999" }}>
-            Aucune langue disponible. <code>bun run db:seed</code> pour peupler
-            la base.
-          </p>
-        )}
-      </div>
+              <span className="text-zinc-500 text-lg shrink-0">→</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

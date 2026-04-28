@@ -6,6 +6,7 @@ import { ReactQueryProvider } from "#/providers/ReactQueryProvider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { Navbar } from "#/components/layouts/Navbar";
+import { BottomNav } from "#/components/layouts/BottomNav";
 
 const fontSans = Sen({
   weight: ["400", "500", "600", "700", "800"],
@@ -51,6 +52,7 @@ export default function RootLayout({
             <div className="pt-16">
               {children}
             </div>
+            <BottomNav />
           </ReactQueryProvider>
         </TooltipProvider>
       </body>

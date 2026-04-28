@@ -22,7 +22,6 @@ export default async function MesCoursPage() {
     },
   });
 
-  // Fetch progress for all characters in enrolled courses
   const enrolledCourseIds = enrollments.map((e) => e.courseId);
   const progress = enrolledCourseIds.length
     ? await db.userProgress.findMany({
@@ -37,17 +36,15 @@ export default async function MesCoursPage() {
       })
     : [];
 
-  // Build progress map per course
   const progressByCourse: Record<string, { started: number; mastered: number }> = {};
   for (const p of progress) {
     const cid = p.character.courseId ?? "";
     if (!cid) continue;
     if (!progressByCourse[cid]) progressByCourse[cid] = { started: 0, mastered: 0 };
-    if (p.practiceLevel === 2) progressByCourse[cid].mastered++;
-    else progressByCourse[cid].started++;
+    if (p.practiceLevel >= 5) progressByCourse[cid].mastered++;
+    else if (p.practiceLevel > 0) progressByCourse[cid].started++;
   }
 
-  // Group enrollments by language
   const byLanguage: Record<
     string,
     { name: string; code: string; script: string | null; courses: typeof enrollments }
@@ -59,23 +56,24 @@ export default async function MesCoursPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Mes cours</h1>
+    <main className="container mx-auto max-w-3xl px-4 py-6 pb-24 md:pb-10 space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Mes cours</h1>
         <Link
           href="/langue"
-          className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
+          className="shrink-0 rounded-xl bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
         >
-          + Ajouter des cours
+          + Ajouter
         </Link>
       </div>
 
       {enrollments.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-12 text-center space-y-4">
-          <p className="text-zinc-400">Tu n'es inscrit à aucun cours pour l'instant.</p>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-10 text-center space-y-4">
+          <p className="text-4xl">📚</p>
+          <p className="text-zinc-400">Tu n&apos;es inscrit à aucun cours.</p>
           <Link
             href="/langue"
-            className="inline-flex items-center rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
+            className="inline-flex items-center rounded-xl bg-zinc-800 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
           >
             Choisir une langue →
           </Link>
@@ -84,7 +82,7 @@ export default async function MesCoursPage() {
         <div className="space-y-8">
           {Object.entries(byLanguage).map(([langId, { name, code, script, courses }]) => (
             <section key={langId} className="space-y-3">
-              <h2 className="text-lg font-semibold text-zinc-300">
+              <h2 className="text-base font-semibold text-zinc-300">
                 {name}
                 {script && <span className="ml-2 text-sm font-normal text-zinc-500">{script}</span>}
               </h2>
@@ -100,26 +98,28 @@ export default async function MesCoursPage() {
                     <Link
                       key={course.id}
                       href={`/langue/${encodeURIComponent(code)}`}
-                      className="block rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 transition-colors"
+                      className="block rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 transition-colors active:bg-zinc-800"
                     >
                       <div className="flex items-start justify-between gap-4 mb-3">
-                        <div>
-                          <p className="font-medium">{course.title}</p>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{course.title}</p>
                           {course.description && (
-                            <p className="text-sm text-zinc-500 mt-0.5">{course.description}</p>
+                            <p className="text-sm text-zinc-500 mt-0.5 truncate">{course.description}</p>
                           )}
                         </div>
-                        <span className="shrink-0 text-xs text-zinc-500">
-                          {prog.mastered}/{total} maîtrisés
+                        <span className="shrink-0 text-xs text-zinc-500 text-right">
+                          {prog.mastered}/{total}
+                          <br />
+                          <span className="text-green-400">maîtrisés</span>
                         </span>
                       </div>
 
                       <div className="flex h-2 w-full overflow-hidden rounded-full bg-zinc-800">
                         {masteredPct > 0 && (
-                          <div className="bg-green-500 h-full" style={{ width: `${masteredPct}%` }} />
+                          <div className="bg-green-500 h-full transition-all" style={{ width: `${masteredPct}%` }} />
                         )}
                         {startedPct > 0 && (
-                          <div className="bg-yellow-400 h-full" style={{ width: `${startedPct}%` }} />
+                          <div className="bg-yellow-400 h-full transition-all" style={{ width: `${startedPct}%` }} />
                         )}
                       </div>
 
