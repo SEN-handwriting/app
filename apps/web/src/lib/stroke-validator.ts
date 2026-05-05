@@ -23,7 +23,8 @@ export interface CharacterResult {
 export interface LevelConfig {
   waypointN: number;
   tolerancePx: number;
-  sequentialThreshold: number;
+  /** Combined score threshold (0–1) to consider a stroke valid */
+  validThreshold: number;
 }
 
 // ─── SVG Sampling ─────────────────────────────────────────────────────────────
@@ -46,10 +47,6 @@ function sampleCubicBezier(
   }
 }
 
-/**
- * Quadratic Bezier — degree-elevated to cubic for uniform sampling.
- * CP1 = P0 + 2/3*(P1-P0), CP2 = P2 + 2/3*(P1-P2)
- */
 function sampleQuadraticBezier(
   out: Point[],
   x0: number, y0: number,
@@ -67,7 +64,6 @@ function sampleQuadraticBezier(
   );
 }
 
-/** Sample `steps` points along a straight segment (end-point included). */
 function sampleLine(
   out: Point[],
   x0: number, y0: number,
@@ -82,16 +78,6 @@ function sampleLine(
 
 // ─── SVG Path Parser ──────────────────────────────────────────────────────────
 
-/**
- * Converts SVG path data to a dense array of sampled points.
- *
- * Supports absolute AND relative: M m L l C c S s Q q T t H h V v A a Z z
- *
- * S/s  — smooth cubic  : CP1 = reflection of last C/S control point 2
- * Q/q  — quadratic     : degree-elevated to cubic for sampling
- * T/t  — smooth quad   : CP = reflection of last Q/T control point
- * A/a  — arc           : approximated as a straight line
- */
 function parseSvgPath(pathD: string): Point[] {
   const tokens =
     pathD.match(
@@ -103,8 +89,8 @@ function parseSvgPath(pathD: string): Point[] {
   let ti = 0;
   let cmd = '';
   let lastDrawCmd = '';
-  let lastCP2x = 0, lastCP2y = 0; // Last cubic control point 2 (for S/s)
-  let lastQCPx = 0, lastQCPy = 0; // Last quadratic control point (for T/t)
+  let lastCP2x = 0, lastCP2y = 0;
+  let lastQCPx = 0, lastQCPy = 0;
 
   const n = (): number => parseFloat(tokens[ti++] ?? '0');
 
@@ -143,7 +129,6 @@ function parseSvgPath(pathD: string): Point[] {
         break;
       }
 
-      // Smooth cubic: CP1 = reflection of last C/S control point 2 over current point
       case 'S': {
         const cp2x = n(), cp2y = n(), ex = n(), ey = n();
         const smooth = /[CcSs]/.test(lastDrawCmd);
@@ -164,7 +149,6 @@ function parseSvgPath(pathD: string): Point[] {
         break;
       }
 
-      // Quadratic Bezier
       case 'Q': {
         const qcpx = n(), qcpy = n(), ex = n(), ey = n();
         sampleQuadraticBezier(points, x, y, qcpx, qcpy, ex, ey);
@@ -179,7 +163,6 @@ function parseSvgPath(pathD: string): Point[] {
         break;
       }
 
-      // Smooth quadratic: CP = reflection of last Q/T control point over current point
       case 'T': {
         const ex = n(), ey = n();
         const smooth = /[QqTt]/.test(lastDrawCmd);
@@ -199,7 +182,6 @@ function parseSvgPath(pathD: string): Point[] {
         break;
       }
 
-      // Arc: approximate as a straight line (accurate enough for stroke validation)
       case 'A': { for (let k = 0; k < 5; k++) n(); const ex = n(), ey = n(); sampleLine(points, x, y, ex, ey); x = ex; y = ey; lastDrawCmd = 'A'; break; }
       case 'a': { for (let k = 0; k < 5; k++) n(); const dex = n(), dey = n(); sampleLine(points, x, y, x+dex, y+dey); x += dex; y += dey; lastDrawCmd = 'a'; break; }
 
@@ -210,7 +192,6 @@ function parseSvgPath(pathD: string): Point[] {
   return points;
 }
 
-// Exported for use by DrawCanvas dots guide mode — uses the full dense parseSvgPath sampling.
 /** Sample SVG-space points at given fractional positions (0.0–1.0) along a path. */
 export function samplePathPoints(pathD: string, fractions: number[]): Point[] {
   const all = parseSvgPath(pathD);
@@ -228,10 +209,6 @@ function normalizePoints(points: Point[], canvasSize = 300, svgSize = 109): Poin
   return points.map(p => ({ x: p.x * scale, y: p.y * scale }));
 }
 
-/**
- * Extract n evenly-spaced waypoints from an SVG path, in canvas pixel space.
- * Used by PracticeGrid to precompute gates and by the sequential scorer.
- */
 export function buildWaypoints(
   svgPath: string,
   n: number,
@@ -249,15 +226,10 @@ export function buildWaypoints(
   return result;
 }
 
-function distance(p1: Point, p2: Point): number {
+export function distance(p1: Point, p2: Point): number {
   return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
 }
 
-/**
- * Returns true if the point is close enough to the current gate to advance to the next one.
- * Separated from getRealtimeStatus so coloring can use a looser window while gate
- * advancement stays strict.
- */
 export function shouldAdvanceGate(
   point: Point,
   waypoints: Point[],
@@ -268,11 +240,6 @@ export function shouldAdvanceGate(
   return distance(point, waypoints[gateIndex]!) <= tolerancePx;
 }
 
-/**
- * Real-time proximity check for coloring only.
- * Checks a window of gates around gateIndex so the stroke stays green/yellow
- * between consecutive gates, not just exactly on each gate.
- */
 export function getRealtimeStatus(
   point: Point,
   waypoints: Point[],
@@ -289,8 +256,6 @@ export function getRealtimeStatus(
     return "off";
   }
 
-  // Look at a window of gates (one behind, two ahead) so transitions between
-  // gates don't flash red — the user is on the path even between two gates.
   const start = Math.max(0, gateIndex - 1);
   const end = Math.min(waypoints.length - 1, gateIndex + 2);
   let minDist = Infinity;
@@ -303,23 +268,33 @@ export function getRealtimeStatus(
   return "off";
 }
 
-function simplifyStroke(points: Point[], tolerance = 5): Point[] {
-  if (points.length <= 2) return points;
+// ─── Stroke Pre-processing ────────────────────────────────────────────────────
+
+/**
+ * Interpolate gaps in the user stroke so fast swipes (common on mobile)
+ * don't create large point-to-point jumps that miss waypoints.
+ */
+function interpolateStroke(points: Point[], maxStep = 15): Point[] {
+  if (points.length <= 1) return points;
   const out: Point[] = [points[0]!];
-  for (let i = 1; i < points.length - 1; i++) {
-    if (distance(out[out.length - 1]!, points[i]!) >= tolerance) out.push(points[i]!);
+  for (let i = 1; i < points.length; i++) {
+    const prev = out[out.length - 1]!;
+    const curr = points[i]!;
+    const d = distance(prev, curr);
+    if (d > maxStep) {
+      const steps = Math.ceil(d / maxStep);
+      for (let s = 1; s <= steps; s++) {
+        out.push({
+          x: prev.x + (curr.x - prev.x) * (s / steps),
+          y: prev.y + (curr.y - prev.y) * (s / steps),
+        });
+      }
+    } else {
+      out.push(curr);
+    }
   }
-  out.push(points[points.length - 1]!);
   return out;
 }
-
-// ─── Stroke Scoring ──────────────────────────────────────────────────────────
-
-export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
-  waypointN: 8,
-  tolerancePx: 38,
-  sequentialThreshold: 60,
-};
 
 function pathLength(points: Point[]): number {
   let len = 0;
@@ -328,83 +303,62 @@ function pathLength(points: Point[]): number {
 }
 
 /**
- * Detects aller-retour by projecting every user point onto the stroke's main axis
- * and measuring the largest backward movement relative to the stroke length.
- * Returns 100 if the user barely backtracks, 0 for a full aller-retour.
+ * Efficiency penalty multiplier (0–1) based on how much the user drew
+ * relative to the expected stroke length.
+ *
+ * A zigzag draws 3–10× more than needed → factor approaches 0 → score collapses.
+ * Natural wobbles (×1.5–1.8) → no penalty (factor = 1.0).
+ *
+ * Scale:
+ *   ratio ≤ 2.0  → 1.0  (no penalty)
+ *   ratio = 3.0  → 0.5
+ *   ratio ≥ 4.0  → 0.0  (completely wrong)
  */
-function computeBacktrackScore(user: Point[], waypoints: Point[]): number {
-  if (waypoints.length < 2 || user.length < 3) return 100;
-  const wStart = waypoints[0]!;
-  const wEnd = waypoints[waypoints.length - 1]!;
-  const totalDist = distance(wStart, wEnd);
-  if (totalDist < 15) return 100; // very short stroke — skip
-  // For highly curved strokes (arc much longer than straight line, e.g. stroke 2 of あ),
-  // projecting onto start→end axis produces false backtrack signals — bypass the check.
-  const arcLen = pathLength(waypoints);
-  if (arcLen > 0 && totalDist / arcLen < 0.55) return 100;
-  const dx = (wEnd.x - wStart.x) / totalDist;
-  const dy = (wEnd.y - wStart.y) / totalDist;
-
-  let maxProj = (user[0]!.x - wStart.x) * dx + (user[0]!.y - wStart.y) * dy;
-  let maxBacktrack = 0;
-  for (const p of user) {
-    const proj = (p.x - wStart.x) * dx + (p.y - wStart.y) * dy;
-    if (proj > maxProj) maxProj = proj;
-    else maxBacktrack = Math.max(maxBacktrack, maxProj - proj);
-  }
-
-  // Normalize: fraction of total stroke length that the user went backward.
-  // Allow up to 25% (natural corrections, hooks); hard-fail at 75%+.
-  const r = maxBacktrack / totalDist;
-  if (r <= 0.25) return 100;
-  if (r >= 0.75) return 0;
-  return Math.round(100 - ((r - 0.25) / 0.50) * 100);
+function efficiencyFactor(userLen: number, expectedLen: number): number {
+  if (expectedLen < 10) return 1.0; // very short expected stroke — skip
+  const ratio = userLen / expectedLen;
+  if (ratio <= 2.0) return 1.0;
+  if (ratio >= 4.0) return 0.0;
+  return 1.0 - (ratio - 2.0) / 2.0;
 }
+
+// ─── Default Config ───────────────────────────────────────────────────────────
+
+export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
+  waypointN: 8,
+  tolerancePx: 50,
+  validThreshold: 0.50,
+};
+
+// ─── Stroke Scoring ───────────────────────────────────────────────────────────
 
 /**
- * Detects lateral detours using a SEQUENTIAL dense gate.
+ * Score a single user stroke against the expected SVG waypoints.
  *
- * The key insight: checking against all 40 waypoints spatially fails on curves
- * because a "future" waypoint (e.g. the bottom-left of a C-curve) can be close
- * to where the user deviated higher up. By advancing the dense gate only when
- * the user is genuinely near it (tight 15 px tolerance), a lateral deviation
- * keeps the gate stuck at the correct position and the distance is measured
- * honestly against that position, not a future one.
+ * Three components, one threshold:
+ *
+ *   base    = coverage × 0.70 + direction × 0.30
+ *   final   = base × effFactor          ← zigzag killer
+ *   isValid ⟺ final ≥ validThreshold
+ *
+ * - coverage:   fraction of waypoints hit in sequential order (≈ "did you follow the shape?")
+ * - direction:  dot product of overall start→end vectors (≈ "did you go the right way?")
+ * - effFactor:  1.0 for normal strokes, collapses toward 0 for zigzags (ratio > 2×)
+ *
+ * Only hard fail: nearly-backwards stroke (direction < 0.20, i.e. > 127° off).
  */
-function computeExcursionScore(user: Point[], denseWaypoints: Point[], tolerancePx: number): number {
-  if (denseWaypoints.length === 0 || user.length === 0) return 100;
-
-  const ADVANCE_TOL = 15; // px — tight so curved future gates can't absorb a deviation
-  let gate = 0;
-  let maxExcursion = 0;
-
-  for (const p of user) {
-    // Advance sequential gate only when genuinely close (not just spatially near a future gate)
-    while (gate < denseWaypoints.length - 1 && distance(p, denseWaypoints[gate]!) <= ADVANCE_TOL) {
-      gate++;
-    }
-    maxExcursion = Math.max(maxExcursion, distance(p, denseWaypoints[gate]!));
-  }
-
-  // Score 100 within tolerancePx, 0 at 1.5× tolerancePx.
-  // isValid threshold 40 → fails when maxExcursion > 1.3× tolerancePx (~58 px at level 0).
-  if (maxExcursion <= tolerancePx) return 100;
-  if (maxExcursion >= tolerancePx * 1.5) return 0;
-  return Math.round(100 - ((maxExcursion - tolerancePx) / (tolerancePx * 0.5)) * 100);
-}
-
-function scoreStrokeSequential(
+function scoreStroke(
   user: Point[],
   waypoints: Point[],
-  denseWaypoints: Point[],
   config: LevelConfig,
+  effFactor: number,
   debug = false,
 ): StrokeResult {
-  if (user.length < 3 || waypoints.length === 0) {
+  if (user.length < 2 || waypoints.length === 0) {
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
 
-  // Direction (15%) — dot product of overall start→end vectors
+  // ── Direction ─────────────────────────────────────────────────────────────
   const uStart = user[0]!, uEnd = user[user.length - 1]!;
   const wStart = waypoints[0]!, wEnd = waypoints[waypoints.length - 1]!;
   const uVec = { x: uEnd.x - uStart.x, y: uEnd.y - uStart.y };
@@ -412,28 +366,23 @@ function scoreStrokeSequential(
   const uLen = Math.sqrt(uVec.x ** 2 + uVec.y ** 2) || 1;
   const wLen = Math.sqrt(wVec.x ** 2 + wVec.y ** 2) || 1;
   const dot = (uVec.x / uLen) * (wVec.x / wLen) + (uVec.y / uLen) * (wVec.y / wLen);
-  const directionScore = ((dot + 1) / 2) * 100;
+  const dirScore = (dot + 1) / 2; // [−1,1] → [0,1]
 
-  // Sequential gate coverage (45%)
-  // Merge waypoints that are closer than tolerancePx/2: a single user point within tolerance
-  // of the first gate is guaranteed to also satisfy the second, so counting them separately
-  // would unfairly penalise short strokes (e.g. stroke 3 of あ) where the user has fewer
-  // captured points than waypoints.
-  const halfTol = config.tolerancePx * 0.5;
-  const effectiveWaypoints: Point[] = [waypoints[0]!];
-  for (let gi = 1; gi < waypoints.length; gi++) {
-    if (distance(effectiveWaypoints[effectiveWaypoints.length - 1]!, waypoints[gi]!) >= halfTol) {
-      effectiveWaypoints.push(waypoints[gi]!);
-    }
-  }
-  // Always keep the last waypoint so end-of-stroke is always checked
-  if (effectiveWaypoints[effectiveWaypoints.length - 1] !== waypoints[waypoints.length - 1]) {
-    effectiveWaypoints.push(waypoints[waypoints.length - 1]!);
+  // Completely backwards stroke → immediate fail
+  if (dirScore < 0.20) {
+    return {
+      isValid: false,
+      score: Math.round(dirScore * 40),
+      coverageScore: 0,
+      directionScore: Math.round(dirScore * 100),
+      feedback: '⚠️ La direction du trait est incorrecte',
+    };
   }
 
+  // ── Coverage ──────────────────────────────────────────────────────────────
   let gatesPassed = 0;
   let searchFrom = 0;
-  for (const gate of effectiveWaypoints) {
+  for (const gate of waypoints) {
     for (let i = searchFrom; i < user.length; i++) {
       if (distance(user[i]!, gate) <= config.tolerancePx) {
         gatesPassed++;
@@ -442,68 +391,55 @@ function scoreStrokeSequential(
       }
     }
   }
-  const coverageScore = (gatesPassed / effectiveWaypoints.length) * 100;
+  const covScore = gatesPassed / waypoints.length; // 0–1
 
-  // Efficiency (10%) — ratio of user path length to expected path length.
-  // A lateral zigzag draws 3-5× more than needed.
-  const expectedLen = pathLength(waypoints);
-  const userLen = pathLength(user);
-  const ratio = expectedLen > 0 ? userLen / expectedLen : 1;
-  const efficiencyScore = ratio <= 2.0
-    ? 100
-    : Math.max(0, Math.round(100 - ((ratio - 2.0) / 2.5) * 100));
-
-  // Backtrack (15%) — detects aller-retour: going forward then coming back.
-  const backtrackScore = computeBacktrackScore(user, waypoints);
-
-  // Excursion (15%) — detects lateral detours: how far did the user stray from the path?
-  // Uses dense waypoints (40 pts) so a "future" waypoint on a curve can't absorb a real detour.
-  const excursionScore = computeExcursionScore(user, denseWaypoints, config.tolerancePx);
-
-  const score = directionScore * 0.15 + coverageScore * 0.45 + efficiencyScore * 0.10 + backtrackScore * 0.15 + excursionScore * 0.15;
-  const isValid =
-    coverageScore >= config.sequentialThreshold &&
-    directionScore >= 45 &&
-    efficiencyScore >= 30 &&
-    backtrackScore >= 40 &&
-    excursionScore >= 40; // fails when user was more than 1.6× tolerancePx from the path
+  // ── Combined (efficiency as multiplicative penalty) ────────────────────────
+  const base = covScore * 0.70 + dirScore * 0.30;
+  const combined = base * effFactor;
+  const isValid = combined >= config.validThreshold;
+  const score100 = Math.round(combined * 100);
 
   if (debug) {
-    console.log('🎯 scoreStrokeSequential:', {
-      waypoints: waypoints.length,
-      effectiveWaypoints: effectiveWaypoints.length,
-      denseWaypoints: denseWaypoints.length,
-      gatesPassed,
+    console.log('🎯 scoreStroke:', {
+      gatesPassed, total: waypoints.length,
+      coverageScore: Math.round(covScore * 100),
+      directionScore: Math.round(dirScore * 100),
+      effFactor: Math.round(effFactor * 100),
+      base: Math.round(base * 100),
+      combined: Math.round(combined * 100),
+      threshold: Math.round(config.validThreshold * 100),
       tolerancePx: config.tolerancePx,
-      directionScore: Math.round(directionScore),
-      coverageScore: Math.round(coverageScore),
-      efficiencyScore: Math.round(efficiencyScore),
-      backtrackScore: Math.round(backtrackScore),
-      excursionScore: Math.round(excursionScore),
-      ratio: Math.round(ratio * 10) / 10,
-      score: Math.round(score),
       isValid,
     });
   }
 
   let feedback: string;
   if (!isValid) {
-    if (backtrackScore < 40)      feedback = '⚠️ Trace le trait sans revenir en arrière';
-    else if (excursionScore < 40) feedback = '⚠️ Ne t\'écarte pas autant du tracé';
-    else if (directionScore < 45) feedback = '⚠️ La direction du trait est incorrecte';
-    else if (efficiencyScore < 30) feedback = '⚠️ Trace le trait d\'un seul geste, sans zigzaguer';
-    else                          feedback = '⚠️ Le tracé ne suit pas assez la forme';
+    if (effFactor < 0.6) {
+      feedback = '⚠️ Trace le trait d\'un seul geste, sans zigzaguer';
+    } else if (dirScore < 0.42) {
+      feedback = '⚠️ La direction du trait est incorrecte';
+    } else {
+      feedback = '⚠️ Essaie de mieux suivre le tracé';
+    }
+  } else if (score100 >= 88) {
+    feedback = '🎉 Parfait !';
+  } else if (score100 >= 75) {
+    feedback = '👍 Très bien !';
   } else {
-    if (score >= 90)      feedback = '🎉 Parfait !';
-    else if (score >= 78) feedback = '👍 Très bien !';
-    else if (score >= 65) feedback = '✓ Bien !';
-    else                  feedback = "✓ C'est correct !";
+    feedback = '✓ C\'est correct !';
   }
 
-  return { isValid, score, coverageScore, directionScore, feedback };
+  return {
+    isValid,
+    score: score100,
+    coverageScore: Math.round(covScore * 100),
+    directionScore: Math.round(dirScore * 100),
+    feedback,
+  };
 }
 
-// ─── Public API ──────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export function validateStroke(
   userStroke: Point[],
@@ -515,16 +451,28 @@ export function validateStroke(
     levelConfig?: LevelConfig;
   } = {},
 ): StrokeResult {
-  const { canvasSize = 300, svgSize = 109, debug = false, levelConfig = DEFAULT_LEVEL_CONFIG } = options;
+  const {
+    canvasSize = 300,
+    svgSize = 109,
+    debug = false,
+    levelConfig = DEFAULT_LEVEL_CONFIG,
+  } = options;
+
   const waypoints = buildWaypoints(svgPath, levelConfig.waypointN, canvasSize, svgSize);
   if (waypoints.length === 0) {
     return { isValid: true, score: 100, coverageScore: 100, directionScore: 100, feedback: '✓ OK' };
   }
-  // Dense waypoints used only for excursion checking — tight spacing (~7 px) prevents a
-  // curve's "future" segment from absorbing a real lateral detour at an earlier position.
-  const denseWaypoints = buildWaypoints(svgPath, 40, canvasSize, svgSize);
-  const user = simplifyStroke(userStroke, 3);
-  return scoreStrokeSequential(user, waypoints, denseWaypoints, levelConfig, debug);
+
+  // Interpolate to fill gaps from fast mobile swipes
+  const user = interpolateStroke(userStroke, 15);
+
+  // Expected arc length from dense sampling (25 pts) for better curve approximation
+  const densePath = buildWaypoints(svgPath, 25, canvasSize, svgSize);
+  const expectedLen = pathLength(densePath);
+  const userLen = pathLength(user);
+  const effFactor = efficiencyFactor(userLen, expectedLen);
+
+  return scoreStroke(user, waypoints, levelConfig, effFactor, debug);
 }
 
 export function validateCharacter(
@@ -565,16 +513,16 @@ export function validateCharacter(
       .filter((i): i is number => i !== null);
     feedback =
       badIndexes.length === 1
-        ? `❌ Trait ${badIndexes[0]} : ${strokeResults[badIndexes[0]! - 1]!.feedback}`
-        : `❌ Traits ${badIndexes.join(', ')} incorrects. Réessayez !`;
+        ? `Trait ${badIndexes[0]} : ${strokeResults[badIndexes[0]! - 1]!.feedback}`
+        : `Traits ${badIndexes.join(', ')} à revoir — réessaie !`;
   } else if (score >= 85) {
-    feedback = '🎉 Parfait ! Vous maîtrisez ce caractère !';
+    feedback = '🎉 Parfait !';
   } else if (score >= 70) {
-    feedback = '👍 Très bien ! Continuez comme ça !';
+    feedback = '👍 Très bien !';
   } else if (score >= 55) {
-    feedback = '✓ Bien ! Vous progressez !';
+    feedback = '✓ Bien !';
   } else {
-    feedback = "✓ C'est correct ! On passe au suivant !";
+    feedback = "✓ C'est correct !";
   }
 
   return { isValid: allValid, score, strokeResults, feedback };

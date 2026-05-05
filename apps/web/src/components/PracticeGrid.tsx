@@ -11,12 +11,12 @@ const LEVEL_CONFIG: Array<LevelConfig & {
   label: string;
   step: string;
 }> = [
-  { guide: "full-thick",   waypointN: 6,  tolerancePx: 45, sequentialThreshold: 55, label: "Étape 1",  step: "Suis le tracé épais" },
-  { guide: "full",         waypointN: 8,  tolerancePx: 38, sequentialThreshold: 60, label: "Étape 2",  step: "Tracé visible" },
-  { guide: "dotted-dense", waypointN: 8,  tolerancePx: 30, sequentialThreshold: 65, label: "Étape 3",  step: "Pointillés denses" },
-  { guide: "dotted",       waypointN: 10, tolerancePx: 25, sequentialThreshold: 70, label: "Étape 4",  step: "Pointillés épars" },
-  { guide: "dots",         waypointN: 10, tolerancePx: 20, sequentialThreshold: 72, label: "Étape 5",  step: "Quelques repères" },
-  { guide: undefined,      waypointN: 12, tolerancePx: 18, sequentialThreshold: 75, label: "Étape 6",  step: "De mémoire 🎯" },
+  { guide: "full-thick",   waypointN: 8,  tolerancePx: 60, validThreshold: 0.45, label: "Étape 1", step: "Suis le tracé épais" },
+  { guide: "full",         waypointN: 8,  tolerancePx: 50, validThreshold: 0.50, label: "Étape 2", step: "Tracé visible" },
+  { guide: "dotted-dense", waypointN: 8,  tolerancePx: 40, validThreshold: 0.53, label: "Étape 3", step: "Pointillés denses" },
+  { guide: "dotted",       waypointN: 9,  tolerancePx: 32, validThreshold: 0.56, label: "Étape 4", step: "Pointillés épars" },
+  { guide: "dots",         waypointN: 9,  tolerancePx: 26, validThreshold: 0.60, label: "Étape 5", step: "Quelques repères" },
+  { guide: undefined,      waypointN: 10, tolerancePx: 22, validThreshold: 0.63, label: "Étape 6", step: "De mémoire 🎯" },
 ];
 
 interface PracticeGridProps {
@@ -111,7 +111,7 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
         levelConfig: {
           waypointN: config.waypointN,
           tolerancePx: config.tolerancePx,
-          sequentialThreshold: config.sequentialThreshold,
+          validThreshold: config.validThreshold,
         },
       });
 

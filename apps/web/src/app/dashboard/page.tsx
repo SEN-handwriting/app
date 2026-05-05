@@ -36,7 +36,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Section 2 — Activité 30 jours */}
-      {stats && stats.sessionCount > 0 && (
+      {stats && stats.sessionCount > 0 && stats.activityDays && (
         <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-3">
           <h2 className="text-base font-semibold text-zinc-300">Activité (30 jours)</h2>
           <Heatmap days={stats.activityDays} />
