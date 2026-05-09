@@ -41,21 +41,21 @@ function paintGuide(
   ctx.scale(scale, scale);
 
   if (mode === "dots") {
-    ctx.fillStyle = "#c0c0c0";
+    ctx.fillStyle = "#888888";
     for (const d of paths) {
       const dotPts = samplePathPoints(d, [0.1, 0.25, 0.5, 0.75, 0.9]);
       for (const pt of dotPts) {
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 4 / scale, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, 5 / scale, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   } else {
     ctx.strokeStyle =
-      mode === "full-thick" ? "#aaaaaa" :
-      mode === "full"       ? "#cccccc" : "#e0e0e0";
+      mode === "full-thick" ? "#666666" :
+      mode === "full"       ? "#999999" : "#bbbbbb";
     ctx.lineWidth =
-      mode === "full-thick" ? 8 / scale : 3 / scale;
+      mode === "full-thick" ? 9 / scale : 4 / scale;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.setLineDash(

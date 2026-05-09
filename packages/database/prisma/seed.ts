@@ -1,4 +1,5 @@
 import { db } from "../src/client";
+import ruCursive from '../data/ru-cursive.json';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,9 +52,18 @@ const COURSES: CourseSeed[] = [
   { id: "course-ru-word-2", languageId: "lang-ru", type: "word", level: 2, title: "Mots essentiels — Nature & Nourriture", description: "Nature et nourriture en cyrillique" },
 ];
 
+// ─── Cursive path lookup maps (ru-cursive.json) ───────────────────────────────
+
+const cursivePathMap = new Map<string, string[]>(
+  ruCursive.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
+);
+const cursiveStrokeCountMap = new Map<string, number>(
+  ruCursive.characters.map((c) => [c.id, c.strokeCount])
+);
+
 // ─── Caractères ───────────────────────────────────────────────────────────────
 // Hiragana paths : KanjiVG (https://kanjivg.tagaini.net) — CC BY-SA 3.0 — viewBox 0 0 109 109
-// Cyrillique paths : dessinés manuellement — viewBox 0 0 109 109
+// Cyrillique paths : ru-cursive.json — viewBox 0 0 109 109
 
 const CHARACTERS: CharSeed[] = [
 
@@ -537,59 +547,59 @@ const CHARACTERS: CharSeed[] = [
   // CYRILLIQUE — Cours 1 : Voyelles А О У И Э Е Ю Я
   // ════════════════════════════════════════════════════════════════════════════
 
-  { id: "cyrillic-a", languageId: "lang-ru", courseId: "course-ru-char-1", label: "А", audioText: "А", strokeCount: 3, courseLevel: 1, meanings: ["voyelle a"],   romaji: ["a"],   svgPaths: ["M55,18L25,90", "M55,18L85,90", "M36,56L74,56"] },
-  { id: "cyrillic-o", languageId: "lang-ru", courseId: "course-ru-char-1", label: "О", audioText: "О", strokeCount: 1, courseLevel: 1, meanings: ["voyelle o"],   romaji: ["o"],   svgPaths: ["M54.5,18c-21,0,-36,16.5,-36,36.5c0,20,15,36.5,36,36.5c21,0,36.5,-16.5,36.5,-36.5c0,-20,-15.5,-36.5,-36.5,-36.5"] },
-  { id: "cyrillic-u", languageId: "lang-ru", courseId: "course-ru-char-1", label: "У", audioText: "У", strokeCount: 2, courseLevel: 1, meanings: ["voyelle ou"],  romaji: ["ou"],  svgPaths: ["M25,22L55,60", "M85,22L55,60L55,90"] },
-  { id: "cyrillic-i", languageId: "lang-ru", courseId: "course-ru-char-1", label: "И", audioText: "И", strokeCount: 3, courseLevel: 1, meanings: ["voyelle i"],   romaji: ["i"],   svgPaths: ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90"] },
-  { id: "cyrillic-e", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Э", audioText: "Э", strokeCount: 2, courseLevel: 1, meanings: ["voyelle é"],   romaji: ["é"],   svgPaths: ["M27,35c0,-18,56,-18,56,20c0,37,-56,37,-56,20", "M42,55L82,55"] },
-  { id: "cyrillic-ye", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Е", audioText: "Е", strokeCount: 4, courseLevel: 1, meanings: ["voyelle yé"],  romaji: ["yé"],  svgPaths: ["M28,20L28,90", "M28,20L80,20", "M28,55L72,55", "M28,90L80,90"] },
-  { id: "cyrillic-yu", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Ю", audioText: "Ю", strokeCount: 3, courseLevel: 1, meanings: ["voyelle you"], romaji: ["you"], svgPaths: ["M22,20L22,90", "M22,55L40,55", "M65,30c-13.8,0,-25,11.2,-25,25c0,13.8,11.2,25,25,25c13.8,0,25,-11.2,25,-25c0,-13.8,-11.2,-25,-25,-25"] },
-  { id: "cyrillic-ya", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Я", audioText: "Я", strokeCount: 3, courseLevel: 1, meanings: ["voyelle ya"],  romaji: ["ya"],  svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20", "M75,58L25,90"] },
+  { id: "cyrillic-a", languageId: "lang-ru", courseId: "course-ru-char-1", label: "А", audioText: "А", strokeCount: cursiveStrokeCountMap.get("cyrillic-a") ?? 3, courseLevel: 1, meanings: ["voyelle a"],   romaji: ["a"],   svgPaths: cursivePathMap.get("cyrillic-a") ?? ["M55,18L25,90", "M55,18L85,90", "M36,56L74,56"] },
+  { id: "cyrillic-o", languageId: "lang-ru", courseId: "course-ru-char-1", label: "О", audioText: "О", strokeCount: cursiveStrokeCountMap.get("cyrillic-o") ?? 1, courseLevel: 1, meanings: ["voyelle o"],   romaji: ["o"],   svgPaths: cursivePathMap.get("cyrillic-o") ?? ["M54.5,18c-21,0,-36,16.5,-36,36.5c0,20,15,36.5,36,36.5c21,0,36.5,-16.5,36.5,-36.5c0,-20,-15.5,-36.5,-36.5,-36.5"] },
+  { id: "cyrillic-u", languageId: "lang-ru", courseId: "course-ru-char-1", label: "У", audioText: "У", strokeCount: cursiveStrokeCountMap.get("cyrillic-u") ?? 2, courseLevel: 1, meanings: ["voyelle ou"],  romaji: ["ou"],  svgPaths: cursivePathMap.get("cyrillic-u") ?? ["M25,22L55,60", "M85,22L55,60L55,90"] },
+  { id: "cyrillic-i", languageId: "lang-ru", courseId: "course-ru-char-1", label: "И", audioText: "И", strokeCount: cursiveStrokeCountMap.get("cyrillic-i") ?? 3, courseLevel: 1, meanings: ["voyelle i"],   romaji: ["i"],   svgPaths: cursivePathMap.get("cyrillic-i") ?? ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90"] },
+  { id: "cyrillic-e", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Э", audioText: "Э", strokeCount: cursiveStrokeCountMap.get("cyrillic-e") ?? 2, courseLevel: 1, meanings: ["voyelle é"],   romaji: ["é"],   svgPaths: cursivePathMap.get("cyrillic-e") ?? ["M27,35c0,-18,56,-18,56,20c0,37,-56,37,-56,20", "M42,55L82,55"] },
+  { id: "cyrillic-ye", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Е", audioText: "Е", strokeCount: cursiveStrokeCountMap.get("cyrillic-ye") ?? 4, courseLevel: 1, meanings: ["voyelle yé"],  romaji: ["yé"],  svgPaths: cursivePathMap.get("cyrillic-ye") ?? ["M28,20L28,90", "M28,20L80,20", "M28,55L72,55", "M28,90L80,90"] },
+  { id: "cyrillic-yu", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Ю", audioText: "Ю", strokeCount: cursiveStrokeCountMap.get("cyrillic-yu") ?? 3, courseLevel: 1, meanings: ["voyelle you"], romaji: ["you"], svgPaths: cursivePathMap.get("cyrillic-yu") ?? ["M22,20L22,90", "M22,55L40,55", "M65,30c-13.8,0,-25,11.2,-25,25c0,13.8,11.2,25,25,25c13.8,0,25,-11.2,25,-25c0,-13.8,-11.2,-25,-25,-25"] },
+  { id: "cyrillic-ya", languageId: "lang-ru", courseId: "course-ru-char-1", label: "Я", audioText: "Я", strokeCount: cursiveStrokeCountMap.get("cyrillic-ya") ?? 3, courseLevel: 1, meanings: ["voyelle ya"],  romaji: ["ya"],  svgPaths: cursivePathMap.get("cyrillic-ya") ?? ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20", "M75,58L25,90"] },
 
   // ════════════════════════════════════════════════════════════════════════════
   // CYRILLIQUE — Cours 2 : Consonnes I — Н Т М К Л П С Р Б В
   // ════════════════════════════════════════════════════════════════════════════
 
-  { id: "cyrillic-n", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Н", audioText: "Н", strokeCount: 3, courseLevel: 2, meanings: ["consonne n"], romaji: ["n"], svgPaths: ["M25,20L25,90", "M85,20L85,90", "M25,55L85,55"] },
-  { id: "cyrillic-t", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Т", audioText: "Т", strokeCount: 2, courseLevel: 2, meanings: ["consonne t"], romaji: ["t"], svgPaths: ["M20,22L89,22", "M54.5,22L54.5,90"] },
-  { id: "cyrillic-m", languageId: "lang-ru", courseId: "course-ru-char-2", label: "М", audioText: "М", strokeCount: 3, courseLevel: 2, meanings: ["consonne m"], romaji: ["m"], svgPaths: ["M20,90L20,20", "M20,20L54.5,60L89,20", "M89,20L89,90"] },
-  { id: "cyrillic-k", languageId: "lang-ru", courseId: "course-ru-char-2", label: "К", audioText: "К", strokeCount: 3, courseLevel: 2, meanings: ["consonne k"], romaji: ["k"], svgPaths: ["M25,20L25,90", "M25,55L80,20", "M25,55L80,90"] },
-  { id: "cyrillic-l", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Л", audioText: "Л", strokeCount: 2, courseLevel: 2, meanings: ["consonne l"], romaji: ["l"], svgPaths: ["M22,20L85,20L85,90", "M22,20L35,90"] },
-  { id: "cyrillic-p", languageId: "lang-ru", courseId: "course-ru-char-2", label: "П", audioText: "П", strokeCount: 3, courseLevel: 2, meanings: ["consonne p"], romaji: ["p"], svgPaths: ["M25,22L85,22", "M25,22L25,90", "M85,22L85,90"] },
-  { id: "cyrillic-s", languageId: "lang-ru", courseId: "course-ru-char-2", label: "С", audioText: "С", strokeCount: 1, courseLevel: 2, meanings: ["consonne s"], romaji: ["s"], svgPaths: ["M82,35c0,-18,-60,-18,-60,20c0,36,60,36,60,20"] },
-  { id: "cyrillic-r", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Р", audioText: "Р", strokeCount: 2, courseLevel: 2, meanings: ["consonne r"], romaji: ["r"], svgPaths: ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20"] },
-  { id: "cyrillic-b", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Б", audioText: "Б", strokeCount: 2, courseLevel: 2, meanings: ["consonne b"], romaji: ["b"], svgPaths: ["M80,20L25,20L25,90", "M25,55c10,0,50,-5,50,18c0,20,-28,18,-50,18"] },
-  { id: "cyrillic-v", languageId: "lang-ru", courseId: "course-ru-char-2", label: "В", audioText: "В", strokeCount: 3, courseLevel: 2, meanings: ["consonne v"], romaji: ["v"], svgPaths: ["M25,20L25,90", "M25,20c30,0,50,0,50,18c0,13,-20,17,-50,20", "M25,58c30,0,55,2,55,17c0,17,-25,15,-55,15"] },
+  { id: "cyrillic-n", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Н", audioText: "Н", strokeCount: cursiveStrokeCountMap.get("cyrillic-n") ?? 3, courseLevel: 2, meanings: ["consonne n"], romaji: ["n"], svgPaths: cursivePathMap.get("cyrillic-n") ?? ["M25,20L25,90", "M85,20L85,90", "M25,55L85,55"] },
+  { id: "cyrillic-t", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Т", audioText: "Т", strokeCount: cursiveStrokeCountMap.get("cyrillic-t") ?? 2, courseLevel: 2, meanings: ["consonne t"], romaji: ["t"], svgPaths: cursivePathMap.get("cyrillic-t") ?? ["M20,22L89,22", "M54.5,22L54.5,90"] },
+  { id: "cyrillic-m", languageId: "lang-ru", courseId: "course-ru-char-2", label: "М", audioText: "М", strokeCount: cursiveStrokeCountMap.get("cyrillic-m") ?? 3, courseLevel: 2, meanings: ["consonne m"], romaji: ["m"], svgPaths: cursivePathMap.get("cyrillic-m") ?? ["M20,90L20,20", "M20,20L54.5,60L89,20", "M89,20L89,90"] },
+  { id: "cyrillic-k", languageId: "lang-ru", courseId: "course-ru-char-2", label: "К", audioText: "К", strokeCount: cursiveStrokeCountMap.get("cyrillic-k") ?? 3, courseLevel: 2, meanings: ["consonne k"], romaji: ["k"], svgPaths: cursivePathMap.get("cyrillic-k") ?? ["M25,20L25,90", "M25,55L80,20", "M25,55L80,90"] },
+  { id: "cyrillic-l", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Л", audioText: "Л", strokeCount: cursiveStrokeCountMap.get("cyrillic-l") ?? 2, courseLevel: 2, meanings: ["consonne l"], romaji: ["l"], svgPaths: cursivePathMap.get("cyrillic-l") ?? ["M22,20L85,20L85,90", "M22,20L35,90"] },
+  { id: "cyrillic-p", languageId: "lang-ru", courseId: "course-ru-char-2", label: "П", audioText: "П", strokeCount: cursiveStrokeCountMap.get("cyrillic-p") ?? 3, courseLevel: 2, meanings: ["consonne p"], romaji: ["p"], svgPaths: cursivePathMap.get("cyrillic-p") ?? ["M25,22L85,22", "M25,22L25,90", "M85,22L85,90"] },
+  { id: "cyrillic-s", languageId: "lang-ru", courseId: "course-ru-char-2", label: "С", audioText: "С", strokeCount: cursiveStrokeCountMap.get("cyrillic-s") ?? 1, courseLevel: 2, meanings: ["consonne s"], romaji: ["s"], svgPaths: cursivePathMap.get("cyrillic-s") ?? ["M82,35c0,-18,-60,-18,-60,20c0,36,60,36,60,20"] },
+  { id: "cyrillic-r", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Р", audioText: "Р", strokeCount: cursiveStrokeCountMap.get("cyrillic-r") ?? 2, courseLevel: 2, meanings: ["consonne r"], romaji: ["r"], svgPaths: cursivePathMap.get("cyrillic-r") ?? ["M25,20L25,90", "M25,20c30,0,55,0,55,18c0,15,-25,20,-55,20"] },
+  { id: "cyrillic-b", languageId: "lang-ru", courseId: "course-ru-char-2", label: "Б", audioText: "Б", strokeCount: cursiveStrokeCountMap.get("cyrillic-b") ?? 2, courseLevel: 2, meanings: ["consonne b"], romaji: ["b"], svgPaths: cursivePathMap.get("cyrillic-b") ?? ["M80,20L25,20L25,90", "M25,55c10,0,50,-5,50,18c0,20,-28,18,-50,18"] },
+  { id: "cyrillic-v", languageId: "lang-ru", courseId: "course-ru-char-2", label: "В", audioText: "В", strokeCount: cursiveStrokeCountMap.get("cyrillic-v") ?? 3, courseLevel: 2, meanings: ["consonne v"], romaji: ["v"], svgPaths: cursivePathMap.get("cyrillic-v") ?? ["M25,20L25,90", "M25,20c30,0,50,0,50,18c0,13,-20,17,-50,20", "M25,58c30,0,55,2,55,17c0,17,-25,15,-55,15"] },
 
   // ════════════════════════════════════════════════════════════════════════════
   // CYRILLIQUE — Cours 3 : Consonnes II — Г Д З Й Ф Х
   // ════════════════════════════════════════════════════════════════════════════
 
-  { id: "cyrillic-g", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Г", audioText: "Г", strokeCount: 2, courseLevel: 3, meanings: ["consonne g"], romaji: ["g"], svgPaths: ["M22,20L85,20", "M22,20L22,90"] },
-  { id: "cyrillic-d", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Д", audioText: "Д", strokeCount: 3, courseLevel: 3, meanings: ["consonne d"], romaji: ["d"], svgPaths: ["M25,88L25,25L55,20L85,25L85,88", "M13,88L32,88", "M78,88L97,88"] },
-  { id: "cyrillic-z", languageId: "lang-ru", courseId: "course-ru-char-3", label: "З", audioText: "З", strokeCount: 2, courseLevel: 3, meanings: ["consonne z"], romaji: ["z"], svgPaths: ["M78,28C78,14 26,14 26,28C26,44 78,44 78,55", "M78,55C78,66 26,66 26,80C26,96 78,96 78,82"] },
-  { id: "cyrillic-j", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Й", audioText: "Й", strokeCount: 4, courseLevel: 3, meanings: ["consonne y"], romaji: ["y"], svgPaths: ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90", "M37,14C55,5 73,5 73,14"] },
-  { id: "cyrillic-f", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Ф", audioText: "Ф", strokeCount: 2, courseLevel: 3, meanings: ["consonne f"], romaji: ["f"], svgPaths: ["M54.5,15L54.5,94", "M54.5,32C33,32 18,43 18,55C18,67 33,78 54.5,78C76,78 91,67 91,55C91,43 76,32 54.5,32"] },
-  { id: "cyrillic-kh", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Х", audioText: "Х", strokeCount: 2, courseLevel: 3, meanings: ["consonne kh"], romaji: ["kh"], svgPaths: ["M22,20L88,90", "M88,20L22,90"] },
+  { id: "cyrillic-g", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Г", audioText: "Г", strokeCount: cursiveStrokeCountMap.get("cyrillic-g") ?? 2, courseLevel: 3, meanings: ["consonne g"], romaji: ["g"], svgPaths: cursivePathMap.get("cyrillic-g") ?? ["M22,20L85,20", "M22,20L22,90"] },
+  { id: "cyrillic-d", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Д", audioText: "Д", strokeCount: cursiveStrokeCountMap.get("cyrillic-d") ?? 3, courseLevel: 3, meanings: ["consonne d"], romaji: ["d"], svgPaths: cursivePathMap.get("cyrillic-d") ?? ["M25,88L25,25L55,20L85,25L85,88", "M13,88L32,88", "M78,88L97,88"] },
+  { id: "cyrillic-z", languageId: "lang-ru", courseId: "course-ru-char-3", label: "З", audioText: "З", strokeCount: cursiveStrokeCountMap.get("cyrillic-z") ?? 2, courseLevel: 3, meanings: ["consonne z"], romaji: ["z"], svgPaths: cursivePathMap.get("cyrillic-z") ?? ["M78,28C78,14 26,14 26,28C26,44 78,44 78,55", "M78,55C78,66 26,66 26,80C26,96 78,96 78,82"] },
+  { id: "cyrillic-j", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Й", audioText: "Й", strokeCount: cursiveStrokeCountMap.get("cyrillic-j") ?? 4, courseLevel: 3, meanings: ["consonne y"], romaji: ["y"], svgPaths: cursivePathMap.get("cyrillic-j") ?? ["M25,20L25,90", "M85,20L85,90", "M85,20L25,90", "M37,14C55,5 73,5 73,14"] },
+  { id: "cyrillic-f", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Ф", audioText: "Ф", strokeCount: cursiveStrokeCountMap.get("cyrillic-f") ?? 2, courseLevel: 3, meanings: ["consonne f"], romaji: ["f"], svgPaths: cursivePathMap.get("cyrillic-f") ?? ["M54.5,15L54.5,94", "M54.5,32C33,32 18,43 18,55C18,67 33,78 54.5,78C76,78 91,67 91,55C91,43 76,32 54.5,32"] },
+  { id: "cyrillic-kh", languageId: "lang-ru", courseId: "course-ru-char-3", label: "Х", audioText: "Х", strokeCount: cursiveStrokeCountMap.get("cyrillic-kh") ?? 2, courseLevel: 3, meanings: ["consonne kh"], romaji: ["kh"], svgPaths: cursivePathMap.get("cyrillic-kh") ?? ["M22,20L88,90", "M88,20L22,90"] },
 
   // ════════════════════════════════════════════════════════════════════════════
   // CYRILLIQUE — Cours 4 : Consonnes III complexes — Ж Ц Ч Ш
   // ════════════════════════════════════════════════════════════════════════════
 
-  { id: "cyrillic-zh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ж", audioText: "Ж", strokeCount: 3, courseLevel: 4, meanings: ["consonne zh"], romaji: ["zh"], svgPaths: ["M54.5,20L54.5,90", "M20,20L54.5,55L20,90", "M89,20L54.5,55L89,90"] },
-  { id: "cyrillic-ts", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ц", audioText: "Ц", strokeCount: 3, courseLevel: 4, meanings: ["consonne ts"], romaji: ["ts"], svgPaths: ["M25,22L25,90", "M85,22L85,90L95,90", "M25,90L85,90"] },
-  { id: "cyrillic-ch", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ч", audioText: "Ч", strokeCount: 2, courseLevel: 4, meanings: ["consonne tch"], romaji: ["tch"], svgPaths: ["M25,20C25,20 25,55 85,55", "M85,20L85,90"] },
-  { id: "cyrillic-sh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ш", audioText: "Ш", strokeCount: 4, courseLevel: 4, meanings: ["consonne ch"], romaji: ["ch"], svgPaths: ["M20,22L89,22", "M20,22L20,90", "M54.5,22L54.5,90", "M89,22L89,90"] },
+  { id: "cyrillic-zh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ж", audioText: "Ж", strokeCount: cursiveStrokeCountMap.get("cyrillic-zh") ?? 3, courseLevel: 4, meanings: ["consonne zh"], romaji: ["zh"], svgPaths: cursivePathMap.get("cyrillic-zh") ?? ["M54.5,20L54.5,90", "M20,20L54.5,55L20,90", "M89,20L54.5,55L89,90"] },
+  { id: "cyrillic-ts", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ц", audioText: "Ц", strokeCount: cursiveStrokeCountMap.get("cyrillic-ts") ?? 3, courseLevel: 4, meanings: ["consonne ts"], romaji: ["ts"], svgPaths: cursivePathMap.get("cyrillic-ts") ?? ["M25,22L25,90", "M85,22L85,90L95,90", "M25,90L85,90"] },
+  { id: "cyrillic-ch", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ч", audioText: "Ч", strokeCount: cursiveStrokeCountMap.get("cyrillic-ch") ?? 2, courseLevel: 4, meanings: ["consonne tch"], romaji: ["tch"], svgPaths: cursivePathMap.get("cyrillic-ch") ?? ["M25,20C25,20 25,55 85,55", "M85,20L85,90"] },
+  { id: "cyrillic-sh", languageId: "lang-ru", courseId: "course-ru-char-4", label: "Ш", audioText: "Ш", strokeCount: cursiveStrokeCountMap.get("cyrillic-sh") ?? 4, courseLevel: 4, meanings: ["consonne ch"], romaji: ["ch"], svgPaths: cursivePathMap.get("cyrillic-sh") ?? ["M20,22L89,22", "M20,22L20,90", "M54.5,22L54.5,90", "M89,22L89,90"] },
 
   // ════════════════════════════════════════════════════════════════════════════
   // CYRILLIQUE — Cours 5 : Signes spéciaux — Щ Ъ Ы Ь Ё
   // ════════════════════════════════════════════════════════════════════════════
 
-  { id: "cyrillic-shch", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Щ", audioText: "Щ", strokeCount: 4, courseLevel: 5, meanings: ["consonne chtch"], romaji: ["chtch"], svgPaths: ["M20,22L80,22", "M20,22L20,90", "M50,22L50,90", "M80,22L80,90L90,90"] },
-  { id: "cyrillic-hard-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ъ", audioText: "Ъ", strokeCount: 3, courseLevel: 5, meanings: ["signe dur"],    romaji: ["ʺ"],    svgPaths: ["M20,20L45,20", "M32,20L32,90", "M32,55C55,55 65,60 65,72C65,84 55,90 32,90"] },
-  { id: "cyrillic-yeru", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ы", audioText: "Ы", strokeCount: 3, courseLevel: 5, meanings: ["voyelle y"],    romaji: ["y"],    svgPaths: ["M22,20L22,90", "M22,55C45,55 55,60 55,72C55,84 45,90 22,90", "M72,20L72,90"] },
-  { id: "cyrillic-soft-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ь", audioText: "Ь", strokeCount: 2, courseLevel: 5, meanings: ["signe mou"],    romaji: ["ʹ"],    svgPaths: ["M25,20L25,90", "M25,55C55,55 65,60 65,72C65,84 55,90 25,90"] },
-  { id: "cyrillic-yo", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ё", audioText: "Ё", strokeCount: 6, courseLevel: 5, meanings: ["voyelle yo"],   romaji: ["yo"],   svgPaths: ["M28,22L28,90", "M28,22L80,22", "M28,56L72,56", "M28,90L80,90", "M36,10L44,10", "M62,10L70,10"] },
+  { id: "cyrillic-shch", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Щ", audioText: "Щ", strokeCount: cursiveStrokeCountMap.get("cyrillic-shch") ?? 4, courseLevel: 5, meanings: ["consonne chtch"], romaji: ["chtch"], svgPaths: cursivePathMap.get("cyrillic-shch") ?? ["M20,22L80,22", "M20,22L20,90", "M50,22L50,90", "M80,22L80,90L90,90"] },
+  { id: "cyrillic-hard-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ъ", audioText: "Ъ", strokeCount: cursiveStrokeCountMap.get("cyrillic-hard-sign") ?? 3, courseLevel: 5, meanings: ["signe dur"],    romaji: ["ʺ"],    svgPaths: cursivePathMap.get("cyrillic-hard-sign") ?? ["M20,20L45,20", "M32,20L32,90", "M32,55C55,55 65,60 65,72C65,84 55,90 32,90"] },
+  { id: "cyrillic-yeru", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ы", audioText: "Ы", strokeCount: cursiveStrokeCountMap.get("cyrillic-yeru") ?? 3, courseLevel: 5, meanings: ["voyelle y"],    romaji: ["y"],    svgPaths: cursivePathMap.get("cyrillic-yeru") ?? ["M22,20L22,90", "M22,55C45,55 55,60 55,72C55,84 45,90 22,90", "M72,20L72,90"] },
+  { id: "cyrillic-soft-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ь", audioText: "Ь", strokeCount: cursiveStrokeCountMap.get("cyrillic-soft-sign") ?? 2, courseLevel: 5, meanings: ["signe mou"],    romaji: ["ʹ"],    svgPaths: cursivePathMap.get("cyrillic-soft-sign") ?? ["M25,20L25,90", "M25,55C55,55 65,60 65,72C65,84 55,90 25,90"] },
+  { id: "cyrillic-yo", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ё", audioText: "Ё", strokeCount: cursiveStrokeCountMap.get("cyrillic-yo") ?? 6, courseLevel: 5, meanings: ["voyelle yo"],   romaji: ["yo"],   svgPaths: cursivePathMap.get("cyrillic-yo") ?? ["M28,22L28,90", "M28,22L80,22", "M28,56L72,56", "M28,90L80,90", "M36,10L44,10", "M62,10L70,10"] },
 ];
 
 // ─── Mots ─────────────────────────────────────────────────────────────────────
@@ -606,6 +616,8 @@ const WORDS: WordSeed[] = [
   { id: "ja-word-hana",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "はな",  reading: "hana",  meaning: "fleur",           audioText: "はな",  courseLevel: 1 },
   { id: "ja-word-tsuki", languageId: "lang-ja", courseId: "course-ja-word-1", text: "つき",  reading: "tsuki", meaning: "lune",            audioText: "つき",  courseLevel: 1 },
   { id: "ja-word-hoshi", languageId: "lang-ja", courseId: "course-ja-word-1", text: "ほし",  reading: "hoshi", meaning: "étoile",          audioText: "ほし",  courseLevel: 1 },
+  { id: "ja-word-umi",   languageId: "lang-ja", courseId: "course-ja-word-1", text: "うみ",  reading: "umi",   meaning: "mer",             audioText: "うみ",  courseLevel: 1 },
+  { id: "ja-word-ame",   languageId: "lang-ja", courseId: "course-ja-word-1", text: "あめ",  reading: "ame",   meaning: "pluie",           audioText: "あめ",  courseLevel: 1 },
 
   // ── Japonais — Cours 2 : Animaux & couleurs ───────────────────────────────
   { id: "ja-word-inu",   languageId: "lang-ja", courseId: "course-ja-word-2", text: "いぬ",  reading: "inu",   meaning: "chien",           audioText: "いぬ",  courseLevel: 2 },
