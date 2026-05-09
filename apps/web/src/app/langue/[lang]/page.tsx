@@ -7,14 +7,12 @@ import { getSession } from "../../../lib/auth-session";
 
 type Props = { params: Promise<{ lang: string }> };
 
-// A course is unlocked if the previous one is >= 60% mastered
 const UNLOCK_THRESHOLD = 0.6;
 
 export default async function LangPage({ params }: Props) {
   const { lang: rawLang } = await params;
   const lang = decodeURIComponent(rawLang);
 
-  // Parallelize session + language lookup (independent)
   const [session, language] = await Promise.all([
     getSession(),
     db.language.findUnique({ where: { code: lang } }),
@@ -23,7 +21,6 @@ export default async function LangPage({ params }: Props) {
   if (!language) notFound();
   const userId = session?.user.id ?? null;
 
-  // Parallelize courses + progress (both depend on language, but not on each other)
   const [courses, progressRows] = await Promise.all([
     db.course.findMany({
       where: { languageId: language.id, type: "character" },
@@ -32,16 +29,14 @@ export default async function LangPage({ params }: Props) {
     }),
     userId
       ? db.userProgress.findMany({
-        where: { userId, character: { languageId: language.id } },
-        select: { characterId: true, practiceLevel: true },
-      })
+          where: { userId, character: { languageId: language.id } },
+          select: { characterId: true, practiceLevel: true },
+        })
       : Promise.resolve([]),
   ]);
 
-  // Per-character progress for the authenticated user
   const progressByCharId = new Map(progressRows.map((r) => [r.characterId, r.practiceLevel]));
 
-  // Count mastered chars per course (practiceLevel = 2)
   const masteredByCourse = new Map<string, number>();
   for (const course of courses) {
     const count = course.characters.filter(
@@ -50,7 +45,6 @@ export default async function LangPage({ params }: Props) {
     masteredByCourse.set(course.id, count);
   }
 
-  // Determine locked courses (cascade)
   const lockedCourseIds = new Set<string>();
   for (let i = 1; i < courses.length; i++) {
     const prev = courses[i - 1]!;
@@ -66,30 +60,25 @@ export default async function LangPage({ params }: Props) {
   }
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 py-8">
-      <Link
-        href="/langue"
-        className="text-zinc-400 hover:text-white text-sm transition-colors"
-      >
+    <main className="container mx-auto max-w-5xl px-4 py-6 pb-24 md:pb-10">
+      <Link href="/langue" className="inline-flex items-center text-zinc-400 hover:text-white text-sm transition-colors py-1">
         ← Langues
       </Link>
 
-      <h1 className="text-3xl font-bold mt-5 mb-8">
-        {language.name}
-        {language.script && (
-          <span className="text-lg text-zinc-500 ml-3 font-normal">
-            {language.script}
-          </span>
-        )}
-      </h1>
+      <div className="mt-4 mb-6">
+        <h1 className="text-2xl font-bold">
+          {language.name}
+          {language.script && (
+            <span className="text-base text-zinc-500 ml-2 font-normal">{language.script}</span>
+          )}
+        </h1>
+      </div>
 
       {courses.length === 0 && (
-        <p className="text-zinc-500">
-          Aucun cours disponible. <code className="text-zinc-400">bun run db:seed</code>
-        </p>
+        <p className="text-zinc-500">Aucun cours disponible.</p>
       )}
 
-      <div className="grid gap-6">
+      <div className="grid gap-4">
         {courses.map((course) => {
           const chars = course.characters;
           const isLocked = lockedCourseIds.has(course.id);
@@ -101,32 +90,32 @@ export default async function LangPage({ params }: Props) {
             <div
               key={course.id}
               className={cn(
-                "rounded-xl border p-5 transition-opacity",
+                "rounded-xl border p-4 transition-opacity",
                 isLocked
                   ? "border-zinc-800 bg-zinc-900/50 opacity-60"
                   : "border-zinc-700 bg-zinc-900",
               )}
             >
               {/* Header */}
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                <div>
-                  <h2 className={cn("text-xl font-semibold", isLocked && "text-zinc-500")}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <h2 className={cn("text-lg font-semibold", isLocked && "text-zinc-500")}>
                     {isLocked ? "🔒 " : ""}{course.title}
                   </h2>
                   {course.description && (
-                    <p className="text-sm text-zinc-500 mt-1">{course.description}</p>
+                    <p className="text-sm text-zinc-500 mt-0.5">{course.description}</p>
                   )}
                 </div>
                 <div className="text-right text-sm text-zinc-500 shrink-0">
-                  <div>{chars.length} caractère{chars.length > 1 ? "s" : ""}</div>
+                  <div className="text-xs">{chars.length} chars</div>
                   {userId && !isLocked && total > 0 && (
-                    <div className={cn("mt-1", mastered === total ? "text-green-400" : "text-zinc-500")}>
-                      {mastered}/{total} maîtrisés ({masteredPct}%)
+                    <div className={cn("text-xs mt-0.5", mastered === total ? "text-green-400" : "text-zinc-500")}>
+                      {mastered}/{total} ({masteredPct}%)
                     </div>
                   )}
                   {isLocked && (
-                    <div className="mt-1 text-xs text-zinc-600">
-                      Maîtrisez {Math.ceil(UNLOCK_THRESHOLD * 100)}% du cours précédent
+                    <div className="text-xs text-zinc-600 mt-0.5">
+                      {Math.ceil(UNLOCK_THRESHOLD * 100)}% requis
                     </div>
                   )}
                 </div>
@@ -134,7 +123,7 @@ export default async function LangPage({ params }: Props) {
 
               {/* Progress bar */}
               {userId && !isLocked && total > 0 && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
                     <div
                       className="bg-green-500 h-full transition-all duration-300"
@@ -145,7 +134,7 @@ export default async function LangPage({ params }: Props) {
               )}
 
               {/* Character grid */}
-              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))" }}>
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(68px, 1fr))" }}>
                 {chars.map((c) => {
                   const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
 
@@ -153,12 +142,10 @@ export default async function LangPage({ params }: Props) {
                     return (
                       <div
                         key={c.id}
-                        className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3 text-center cursor-not-allowed"
+                        className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-2.5 text-center cursor-not-allowed"
                       >
-                        <p className="text-3xl text-zinc-600">{c.label}</p>
-                        {romaji && (
-                          <p className="text-xs mt-1 text-zinc-700">{romaji}</p>
-                        )}
+                        <p className="text-2xl text-zinc-600">{c.label}</p>
+                        {romaji && <p className="text-[10px] mt-0.5 text-zinc-700">{romaji}</p>}
                       </div>
                     );
                   }
@@ -168,28 +155,19 @@ export default async function LangPage({ params }: Props) {
                     <Link
                       key={c.id}
                       href={`/langue/${encodeURIComponent(lang)}/${encodeURIComponent(c.id)}/learn`}
+                      className={cn(
+                        "relative rounded-xl p-2.5 text-center transition-colors active:scale-95",
+                        level >= 2
+                          ? "border-2 border-green-500 bg-green-950/30"
+                          : level >= 0
+                            ? "border-2 border-yellow-500 bg-yellow-950/20"
+                            : "border border-zinc-700 bg-zinc-900 hover:border-zinc-500",
+                      )}
                     >
-                      <div
-                        className={cn(
-                          "relative rounded-lg p-3 text-center transition-colors hover:brightness-110",
-                          level >= 2
-                            ? "border-2 border-green-500 bg-green-950/30"
-                            : level >= 0
-                              ? "border-2 border-yellow-500 bg-yellow-950/20"
-                              : "border border-zinc-700 bg-zinc-900 hover:border-zinc-500",
-                        )}
-                      >
-                        {level >= 2 && (
-                          <span className="absolute top-1 right-1 text-[10px]">⭐</span>
-                        )}
-                        {level === 1 && (
-                          <span className="absolute top-1 right-1 text-[10px]">✏️</span>
-                        )}
-                        <p className="text-3xl">{c.label}</p>
-                        {romaji && (
-                          <p className="text-xs mt-1 text-zinc-400">{romaji}</p>
-                        )}
-                      </div>
+                      {level >= 2 && <span className="absolute top-1 right-1 text-[9px]">⭐</span>}
+                      {level === 1 && <span className="absolute top-1 right-1 text-[9px]">✏️</span>}
+                      <p className="text-2xl">{c.label}</p>
+                      {romaji && <p className="text-[10px] mt-0.5 text-zinc-400">{romaji}</p>}
                     </Link>
                   );
                 })}

@@ -43,7 +43,7 @@ export async function GET(
     let match: RegExpExecArray | null;
 
     while ((match = pathRegex.exec(svgText)) !== null) {
-      strokePaths.push({ order: parseInt(match[1]), d: match[2] });
+      strokePaths.push({ order: parseInt(match[1]!), d: match[2]! });
     }
 
     strokePaths.sort((a, b) => a.order - b.order);
