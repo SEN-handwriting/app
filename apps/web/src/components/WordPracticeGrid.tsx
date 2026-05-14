@@ -38,37 +38,186 @@ const LEVEL_CONFIG: Array<LevelConfig & {
   { guide: undefined,      waypointN: 10, tolerancePx: 22, validThreshold: 0.63, label: "Étape 6" },
 ]
 
-export default function WordPracticeGrid({ word, level, lang, variant, onComplete }: WordPracticeGridProps) {
-  const cfg = LEVEL_CONFIG[Math.max(0, Math.min(5, level - 1))]!
+const GAP = 10
 
-  const isDark = variant === "dark"
-  const cls = {
-    container: isDark
-      ? "rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden"
-      : "rounded-xl border border-blue-100 bg-[#FAFAF8] overflow-hidden",
-    rule:         isDark ? "border-t border-zinc-800"          : "border-t border-blue-100",
-    modelWord:    isDark ? "text-zinc-600"                     : "text-gray-300",
-    levelLabel:   isDark ? "text-zinc-200"                     : "text-gray-800",
-    meaning:      isDark ? "text-zinc-400"                     : "text-gray-500",
-    letterDone:   isDark ? "bg-green-950/30 text-green-400"    : "bg-green-100 text-green-700",
-    letterPending:isDark ? "bg-zinc-800 text-zinc-500"         : "bg-gray-100 text-gray-400",
-    dotPending:   isDark ? "bg-zinc-700"                       : "bg-gray-200",
-    feedback:     isDark ? "text-zinc-400"                     : "text-gray-600",
-  }
+// Compute per-letter canvas size based on available container width
+function getLayout(n: number, availableWidth: number): { canvasSize: number; perRow: number } {
+  const perRow = n === 1 ? 1 : n <= 3 ? n : n === 4 ? 2 : 3
+  const canvasSize = Math.max(60, Math.floor((availableWidth - GAP * (perRow - 1)) / perRow))
+  return { canvasSize, perRow }
+}
 
-  const letters = Array.from(word.text)
-  const [letterIndex, setLetterIndex] = useState(0)
-  const [letterPaths, setLetterPaths] = useState<Record<string, string[]>>({})
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [scores, setScores] = useState<number[]>([])
-  // tracks how many strokes the user has completed for the current letter
-  const [drawnStrokes, setDrawnStrokes] = useState(0)
+type LetterStatus = "idle" | "valid" | "invalid"
 
-  const canvasRef = useRef<DrawCanvasHandle>(null)
-  const gateRef   = useRef<number>(0)
+interface LetterBoxProps {
+  index: number
+  letter: string
+  paths: string[]
+  canvasSize: number
+  cfg: typeof LEVEL_CONFIG[number]
+  isDark: boolean
+  onValid: (index: number, score: number) => void
+}
+
+function LetterBox({ index, letter, paths, canvasSize, cfg, isDark, onValid }: LetterBoxProps) {
+  const canvasRef    = useRef<DrawCanvasHandle>(null)
+  const gateRef      = useRef(0)
   const waypointsRef = useRef<{ x: number; y: number }[]>([])
+  const [drawn,  setDrawn]  = useState(0)
+  const [status, setStatus] = useState<LetterStatus>("idle")
 
-  // Fetch SVG paths for every character in this language
+  // Tolerance scaled to actual canvas size (paths were designed for 300px canvas)
+  const tolerance = cfg.tolerancePx * (canvasSize / 300)
+
+  const handleStrokeStart = useCallback(
+    (completedCount: number) => {
+      setDrawn(completedCount)
+      const path = paths[completedCount]
+      if (path) waypointsRef.current = buildWaypoints(path, cfg.waypointN, canvasSize)
+      gateRef.current = 0
+    },
+    [paths, cfg.waypointN, canvasSize],
+  )
+
+  const handleRealtimeFeedback = useCallback(
+    (point: { x: number; y: number }): "on" | "near" | "off" => {
+      const wp = waypointsRef.current
+      if (!wp.length) return "off"
+      if (shouldAdvanceGate(point, wp, gateRef.current, tolerance)) {
+        gateRef.current = Math.min(gateRef.current + 1, wp.length - 1)
+      }
+      return getRealtimeStatus(point, wp, gateRef.current, tolerance)
+    },
+    [tolerance],
+  )
+
+  const handleStrokeComplete = useCallback(
+    (strokes: Array<{ x: number; y: number }[]>) => {
+      if (!paths.length || !strokes.length) return
+
+      if (strokes.length > paths.length) {
+        canvasRef.current?.clear()
+        gateRef.current = 0
+        setDrawn(0)
+        return
+      }
+      if (strokes.length < paths.length) return
+
+      const result = validateCharacter(strokes, paths, {
+        canvasSize,
+        levelConfig: {
+          waypointN:      cfg.waypointN,
+          tolerancePx:    tolerance,
+          validThreshold: cfg.validThreshold,
+        },
+      })
+
+      if (result.isValid) {
+        setStatus("valid")
+        onValid(index, result.score)
+      } else {
+        setStatus("invalid")
+        setTimeout(() => {
+          canvasRef.current?.clear()
+          gateRef.current = 0
+          setDrawn(0)
+          setStatus("idle")
+        }, 700)
+      }
+    },
+    [paths, cfg, canvasSize, tolerance, onValid, index],
+  )
+
+  const borderColor =
+    status === "valid"   ? "#22c55e" :
+    status === "invalid" ? "#ef4444" :
+    isDark ? "#52525b" : "#d1d5db"
+
+  const isActive = status !== "valid"
+
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      {/* Model letter */}
+      <span
+        className={`text-sm font-medium select-none ${isDark ? "text-zinc-500" : "text-gray-400"}`}
+        style={{ fontFamily: "'Noto Sans', sans-serif" }}
+      >
+        {letter}
+      </span>
+
+      {/* Canvas + valid overlay */}
+      <div className="relative w-full">
+        <DrawCanvas
+          ref={canvasRef}
+          width={canvasSize}
+          height={canvasSize}
+          guidePaths={isActive ? paths : undefined}
+          guideMode={isActive ? cfg.guide : undefined}
+          onStrokeStart={isActive ? handleStrokeStart : undefined}
+          onRealtimeFeedback={isActive ? handleRealtimeFeedback : undefined}
+          onStrokeComplete={isActive ? handleStrokeComplete : undefined}
+          borderColor={borderColor}
+        />
+        {status === "valid" && (
+          <div
+            className="absolute inset-0 flex items-center justify-center rounded pointer-events-none"
+            style={{ background: "rgba(34,197,94,0.15)" }}
+          >
+            <span className="text-green-400 font-bold" style={{ fontSize: canvasSize * 0.42 }}>✓</span>
+          </div>
+        )}
+      </div>
+
+      {/* Stroke-progress dots (multi-stroke letters only, while not yet valid) */}
+      {paths.length > 1 && isActive && (
+        <div className="flex gap-1">
+          {paths.map((_, si) => (
+            <div
+              key={si}
+              className={[
+                "w-2 h-2 rounded-full transition-colors",
+                si < drawn  ? "bg-green-400" :
+                si === drawn ? "bg-blue-500" :
+                isDark ? "bg-zinc-600" : "bg-gray-300",
+              ].join(" ")}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function WordPracticeGrid({ word, level, lang, variant, onComplete }: WordPracticeGridProps) {
+  const cfg      = LEVEL_CONFIG[Math.max(0, Math.min(5, level - 1))]!
+  const isDark   = variant === "dark"
+  const isRussian = lang === "ru-RU"
+  const displayText = isRussian ? word.text.toUpperCase() : word.text
+  const letters  = Array.from(displayText)
+  const n        = letters.length
+
+  const [letterPaths, setLetterPaths] = useState<Record<string, string[]>>({})
+  const [validCount, setValidCount]   = useState(0)
+  const [containerWidth, setContainerWidth] = useState(320)
+  const gridRef = useRef<HTMLDivElement | null>(null)
+
+  const validatedRef = useRef<boolean[]>(letters.map(() => false))
+  const scoresRef    = useRef<number[]>([])
+
+  // Measure grid container for responsive canvas sizing
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width
+      if (w && w > 0) setContainerWidth(Math.floor(w))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => {
     fetch(`/api/characters?lang=${lang ?? "ru-RU"}`)
       .then((r) => r.json())
@@ -76,7 +225,6 @@ export default function WordPracticeGrid({ word, level, lang, variant, onComplet
         const map: Record<string, string[]> = {}
         for (const c of chars) {
           map[c.label] = c.svgPaths
-          // Also map the lowercase version so Russian words (мама) find uppercase labels (М)
           map[c.label.toLowerCase()] = c.svgPaths
         }
         setLetterPaths(map)
@@ -84,170 +232,76 @@ export default function WordPracticeGrid({ word, level, lang, variant, onComplet
       .catch((err) => console.error("Failed to load character paths", err))
   }, [lang])
 
-  const currentLetter = letters[letterIndex] ?? ""
-  // Exact match first, then uppercase fallback (Russian words use lowercase, labels uppercase)
-  const currentPaths =
-    letterPaths[currentLetter] ??
-    letterPaths[currentLetter.toUpperCase()] ??
-    []
+  const getPaths = (letter: string): string[] =>
+    letterPaths[letter] ?? letterPaths[letter.toUpperCase()] ?? []
 
-  // When the user lifts the pen and starts the NEXT stroke, update waypoints for that stroke.
-  // completedCount = number of strokes already completed = index of the stroke about to start.
-  const handleStrokeStart = useCallback(
-    (completedCount: number) => {
-      setDrawnStrokes(completedCount)
-      const path = currentPaths[completedCount]
-      if (path) {
-        waypointsRef.current = buildWaypoints(path, cfg.waypointN)
-      }
-      gateRef.current = 0
-    },
-    [currentPaths, cfg.waypointN],
-  )
+  const { canvasSize, perRow } = getLayout(n, containerWidth)
 
-  const handleRealtimeFeedback = useCallback(
-    (point: { x: number; y: number }): "on" | "near" | "off" => {
-      const wp = waypointsRef.current
-      if (!wp.length) return "off"
-      if (shouldAdvanceGate(point, wp, gateRef.current, cfg.tolerancePx)) {
-        gateRef.current = Math.min(gateRef.current + 1, wp.length - 1)
-      }
-      return getRealtimeStatus(point, wp, gateRef.current, cfg.tolerancePx)
-    },
-    [cfg.tolerancePx],
-  )
+  const handleLetterValid = useCallback(
+    (index: number, score: number) => {
+      if (validatedRef.current[index]) return
+      validatedRef.current[index] = true
+      scoresRef.current.push(score)
 
-  const handleStrokeComplete = useCallback(
-    (strokes: Array<{ x: number; y: number }[]>) => {
-      if (!currentPaths.length || !strokes.length) return
+      const count = validatedRef.current.filter(Boolean).length
+      setValidCount(count)
 
-      // Keep accumulating strokes until we have all of them for this letter.
-      // guidePaths = currentPaths (all strokes shown at once) so DrawCanvas never
-      // resets allStrokes between strokes of the same letter.
-      if (strokes.length < currentPaths.length) return
-
-      const result = validateCharacter(strokes, currentPaths, {
-        levelConfig: {
-          waypointN: cfg.waypointN,
-          tolerancePx: cfg.tolerancePx,
-          validThreshold: cfg.validThreshold,
-        },
-      })
-
-      setFeedback(result.feedback)
-
-      const reset = () => {
-        canvasRef.current?.clear()
-        gateRef.current = 0
-        setDrawnStrokes(0)
-      }
-
-      if (result.isValid) {
-        const newScores = [...scores, result.score]
-        setScores(newScores)
-        reset()
-
-        const nextLetter = letterIndex + 1
-        if (nextLetter < letters.length) {
-          setLetterIndex(nextLetter)
-          setFeedback(null)
-        } else {
-          const avg = Math.round(newScores.reduce((a, b) => a + b, 0) / newScores.length)
-          onComplete(avg)
-        }
-      } else {
-        reset()
+      if (count === letters.length) {
+        const all = scoresRef.current
+        onComplete(Math.round(all.reduce((a, b) => a + b, 0) / all.length))
       }
     },
-    [currentPaths, letterIndex, letters, scores, cfg, onComplete],
+    [letters.length, onComplete],
   )
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto p-4">
-      {/* Level + meaning */}
-      <div className={`flex items-center gap-2 text-sm ${cls.meaning}`}>
-        <span className={`font-medium ${cls.levelLabel}`}>{cfg.label}</span>
-        <span>·</span>
-        <span>{word.meaning}</span>
+    <div className="flex flex-col items-center gap-5 w-full max-w-sm mx-auto px-4 pb-6">
+      {/* Level · meaning */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className={`font-semibold ${isDark ? "text-zinc-200" : "text-gray-800"}`}>
+          {cfg.label}
+        </span>
+        <span className={isDark ? "text-zinc-600" : "text-gray-300"}>·</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{word.meaning}</span>
       </div>
 
-      {/* Copybook card */}
-      <div className={`w-full ${cls.container}`}>
-        {/* Model word line */}
-        <div className={`relative h-20 border-b ${isDark ? "border-zinc-800" : "border-blue-100"}`}>
-          <div className="absolute inset-0 flex flex-col justify-between py-2 pointer-events-none">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={`w-full ${cls.rule}`} />
-            ))}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span
-              className={`text-3xl font-normal tracking-widest select-none ${cls.modelWord}`}
-              style={{ fontFamily: "'Noto Sans', sans-serif" }}
-            >
-              {word.text}
-            </span>
-          </div>
-        </div>
-
-        {/* Drawing canvas — square so that 109×109 SVG paths fit without clipping */}
-        <div className="flex justify-center p-3">
-          <DrawCanvas
-            ref={canvasRef}
-            width={300}
-            height={300}
-            guidePaths={currentPaths}
-            guideMode={cfg.guide}
-            onStrokeStart={handleStrokeStart}
-            onRealtimeFeedback={handleRealtimeFeedback}
-            onStrokeComplete={handleStrokeComplete}
-            borderColor={isDark ? "#3f3f46" : "#ddd"}
-          />
-        </div>
+      {/* Model word */}
+      <div
+        className={`text-4xl font-normal tracking-[0.18em] select-none ${isDark ? "text-zinc-500" : "text-gray-300"}`}
+        style={{ fontFamily: "'Noto Sans', sans-serif" }}
+      >
+        {displayText}
       </div>
 
-      {/* Letter progress pills */}
-      <div className="flex gap-2 items-center flex-wrap justify-center">
-        {letters.map((l, i) => (
-          <div
+      {/* Progress */}
+      <p className={`text-xs ${isDark ? "text-zinc-600" : "text-gray-400"}`}>
+        {validCount}/{n} lettre{n > 1 ? "s" : ""} validée{n > 1 ? "s" : ""}
+      </p>
+
+      {/* Letter boxes — responsive grid */}
+      <div
+        ref={gridRef}
+        className="w-full"
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${perRow}, ${canvasSize}px)`,
+          gap: `${GAP}px`,
+          justifyContent: "center",
+        }}
+      >
+        {letters.map((letter, i) => (
+          <LetterBox
             key={i}
-            className={[
-              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all",
-              i < letterIndex
-                ? cls.letterDone
-                : i === letterIndex
-                ? "bg-blue-500 text-white scale-110 shadow-md"
-                : cls.letterPending,
-            ].join(" ")}
-          >
-            {l}
-          </div>
+            index={i}
+            letter={letter}
+            paths={getPaths(letter)}
+            canvasSize={canvasSize}
+            cfg={cfg}
+            isDark={isDark}
+            onValid={handleLetterValid}
+          />
         ))}
       </div>
-
-      {/* Feedback message */}
-      {feedback && (
-        <p className={`text-sm text-center min-h-[1.25rem] ${cls.feedback}`}>{feedback}</p>
-      )}
-
-      {/* Stroke progress dots (multi-stroke letters only) */}
-      {currentPaths.length > 1 && (
-        <div className="flex gap-1.5">
-          {currentPaths.map((_, i) => (
-            <div
-              key={i}
-              className={[
-                "w-2 h-2 rounded-full transition-colors",
-                i < drawnStrokes
-                  ? "bg-green-400"
-                  : i === drawnStrokes
-                  ? "bg-blue-500"
-                  : cls.dotPending,
-              ].join(" ")}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
