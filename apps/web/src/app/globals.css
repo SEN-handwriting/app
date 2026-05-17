@@ -3,8 +3,7 @@
 
 @layer base {
   html {
-    background-color: #0a0a0a;
-    color: #fff;
+    @apply bg-neutral-900 text-white;
     font-family: var(--font-sans);
   }
 }

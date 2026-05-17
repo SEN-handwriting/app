@@ -43,15 +43,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scrollbar-thin scheme-dark">
+    <html
+      lang="en"
+      className="scrollbar-thin selection:bg-primary-600 scheme-dark"
+    >
       <body className={`${fontSans.variable} ${fontMono.variable} font-sans`}>
         <TooltipProvider>
           <ReactQueryProvider>
             <ReactQueryDevtools />
-            <Navbar />
-            <div className="pt-16">
-              {children}
+
+            <div className="pointer-events-none fixed inset-0 -z-10">
+              <div className="bg-primary-400 absolute top-0 left-0 aspect-square size-1/2 rounded-full blur-[100vw]" />
+              <div className="absolute right-0 bottom-0 size-1/2 rounded-full bg-[#0083D4] blur-[100vw]" />
             </div>
+
+            <Navbar />
+            <div className="pt-16">{children}</div>
             <BottomNav />
           </ReactQueryProvider>
         </TooltipProvider>

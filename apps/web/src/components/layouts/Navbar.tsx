@@ -15,17 +15,17 @@ export function Navbar() {
   const { data } = useProfile();
 
   return (
-    <div className="fixed top-0 z-50 w-full bg-black py-4">
+    <div className="fixed top-0 z-50 w-full bg-black/20 py-4 backdrop-blur-lg">
       <nav className="container mx-auto px-4">
+        {/* Desktop row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-10">
-            <Link href="/" className="font-bold text-lg">
+            <Link href="/" className="text-lg font-bold" onClick={close}>
               Sen
             </Link>
 
             {data?.user && (
-              <div className="hidden md:flex items-center gap-1">
-                <NavbarLink href="/dashboard">Dashboard</NavbarLink>
+              <div className="hidden items-center gap-1 md:flex">
                 <NavbarLink href="/langue">Langues</NavbarLink>
                 <NavbarLink href="/mes-cours">Mes cours</NavbarLink>
                 <RevisionNavLink />
@@ -33,9 +33,13 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          {/* Right side desktop */}
+          <div className="hidden items-center gap-4 md:flex">
             {data?.user ? (
-              <NavbarLink href="/profile" className="inline-flex items-center gap-2">
+              <NavbarLink
+                href="/profile"
+                className="inline-flex items-center gap-2"
+              >
                 <Avatar>
                   <AvatarImage src={(data?.user.image ?? undefined) as string | undefined} />
                   <AvatarFallback>{data?.user.name?.charAt(0)}</AvatarFallback>
@@ -54,18 +58,82 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile — auth buttons only (nav handled by BottomNav) */}
-          {!data?.user && (
-            <div className="md:hidden flex gap-3">
-              <Button asChild variant="flat">
-                <Link href="/sign-in">Sign in</Link>
-              </Button>
-              <Button asChild color="secondary">
-                <Link href="/sign-up">Sign up</Link>
-              </Button>
-            </div>
-          )}
+          {/* Hamburger button — mobile only */}
+          <button
+            className="-mr-2 flex flex-col justify-center gap-1.5 p-2 md:hidden"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={menuOpen}
+          >
+            <span
+              className={cn(
+                "block h-0.5 w-6 bg-white transition-all duration-200",
+                menuOpen && "translate-y-2 rotate-45",
+              )}
+            />
+            <span
+              className={cn(
+                "block h-0.5 w-6 bg-white transition-all duration-200",
+                menuOpen && "opacity-0",
+              )}
+            />
+            <span
+              className={cn(
+                "block h-0.5 w-6 bg-white transition-all duration-200",
+                menuOpen && "-translate-y-2 -rotate-45",
+              )}
+            />
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="mt-4 flex flex-col gap-1 border-t border-zinc-800 pt-4 md:hidden">
+            {data?.user ? (
+              <>
+                <NavbarLink href="/langue" onClick={close}>
+                  Langues
+                </NavbarLink>
+                <NavbarLink href="/mes-cours" onClick={close}>
+                  Mes cours
+                </NavbarLink>
+                <NavbarLink href="/stats" onClick={close}>
+                  Stats
+                </NavbarLink>
+                <NavbarLink
+                  href="/profile"
+                  className="mt-2 inline-flex items-center gap-2"
+                  onClick={close}
+                >
+                  <Avatar>
+                    <AvatarImage
+                      src={
+                        (data?.user.image ?? undefined) as string | undefined
+                      }
+                    />
+                    <AvatarFallback>
+                      {data?.user.name?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{data?.user.name}</span>
+                </NavbarLink>
+              </>
+            ) : (
+              <div className="flex gap-3 py-2">
+                <Button asChild variant="flat">
+                  <Link href="/sign-in" onClick={close}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button asChild color="secondary">
+                  <Link href="/sign-up" onClick={close}>
+                    Sign up
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </nav>
     </div>
   );
@@ -94,7 +162,7 @@ function NavbarLink({
     <Link
       {...props}
       className={cn(
-        "relative inline-flex items-center gap-2 rounded-xl px-4 py-2 hover:bg-zinc-900 transition-colors",
+        "inline-flex items-center gap-2 rounded-xl px-4 py-2 transition-colors hover:bg-zinc-900",
         className,
       )}
     >

@@ -51,7 +51,7 @@ export function SignInForm() {
         />
 
         <div className="flex justify-end">
-          <Link className="text-blue-300 underline" href="/">
+          <Link className="text-primary-300 underline" href="/">
             I forgot my password
           </Link>
         </div>
