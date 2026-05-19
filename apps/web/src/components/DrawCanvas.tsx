@@ -17,6 +17,8 @@ export type DrawCanvasHandle = {
 interface DrawCanvasProps {
   width?: number;
   height?: number;
+  /** When true, canvas fills its container width (square, responsive via ResizeObserver) */
+  fluid?: boolean;
   onStrokeComplete?: (strokes: Array<{ x: number; y: number }[]>) => void;
   onStrokeStart?: (completedCount: number) => void;
   onRealtimeFeedback?: (point: { x: number; y: number }) => "on" | "near" | "off";
@@ -27,8 +29,6 @@ interface DrawCanvasProps {
   guideMode?: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots";
 }
 
-// Draws guide paths directly on the canvas context (behind user strokes).
-// paths are in 109×109 SVG space; we scale to the canvas logical size.
 function paintGuide(
   ctx: CanvasRenderingContext2D,
   paths: string[] | undefined,
@@ -75,6 +75,7 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
     {
       width = 300,
       height = 300,
+      fluid = false,
       onStrokeComplete,
       onStrokeStart,
       onRealtimeFeedback,
@@ -85,22 +86,40 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
     ref,
   ) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const drawing = useRef(false);
     const last = useRef<{ x: number; y: number } | null>(null);
     const currentStroke = useRef<Array<{ x: number; y: number }>>([]);
     const allStrokes = useRef<Array<Array<{ x: number; y: number }>>>([]);
     const dprRef = useRef(1);
-    // Keep latest guide props accessible in imperative handle
     const guidePathsRef = useRef(guidePaths);
     const guideModeRef = useRef(guideMode);
-    const [size] = useState({ w: width, h: height });
 
+    // logicalSize = rendered canvas width (and height for square). 0 = not yet measured.
+    const [logicalSize, setLogicalSize] = useState(fluid ? 0 : width);
+    const logicalSizeRef = useRef(logicalSize);
+
+    useEffect(() => { logicalSizeRef.current = logicalSize; }, [logicalSize]);
+    useEffect(() => { guidePathsRef.current = guidePaths; }, [guidePaths]);
+    useEffect(() => { guideModeRef.current = guideMode; }, [guideMode]);
+
+    // Non-fluid: keep logicalSize in sync with the width prop (handles dynamic canvasSize from parent)
     useEffect(() => {
-      guidePathsRef.current = guidePaths;
-    }, [guidePaths]);
+      if (!fluid) setLogicalSize(width);
+    }, [fluid, width]);
+
+    // Fluid: measure container on mount and on resize
     useEffect(() => {
-      guideModeRef.current = guideMode;
-    }, [guideMode]);
+      if (!fluid) return;
+      const el = containerRef.current;
+      if (!el) return;
+      const ro = new ResizeObserver((entries) => {
+        const w = entries[0]?.contentRect.width;
+        if (w && w > 0) setLogicalSize(Math.floor(w));
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [fluid]);
 
     useImperativeHandle(ref, () => ({
       clear: () => {
@@ -109,9 +128,10 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         const ctx = c.getContext("2d");
         if (!ctx) return;
         const dpr = dprRef.current;
+        const ls = logicalSizeRef.current;
         ctx.clearRect(0, 0, c.width, c.height);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        paintGuide(ctx, guidePathsRef.current, guideModeRef.current, size.w);
+        paintGuide(ctx, guidePathsRef.current, guideModeRef.current, ls);
         currentStroke.current = [];
         allStrokes.current = [];
       },
@@ -124,16 +144,18 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       },
     }));
 
-    // Initial canvas setup (runs once)
+    // Canvas setup — re-runs whenever logicalSize changes (fluid resize or width prop update)
     useEffect(() => {
+      if (logicalSize === 0) return;
       const c = canvasRef.current;
       if (!c) return;
       const dpr = window.devicePixelRatio || 1;
       dprRef.current = dpr;
-      c.width = size.w * dpr;
-      c.height = size.h * dpr;
-      c.style.width = `${size.w}px`;
-      c.style.height = `${size.h}px`;
+      const h = fluid ? logicalSize : height;
+      c.width = logicalSize * dpr;
+      c.height = h * dpr;
+      c.style.width = `${logicalSize}px`;
+      c.style.height = `${h}px`;
       const ctx = c.getContext("2d");
       if (!ctx) return;
       ctx.scale(dpr, dpr);
@@ -141,12 +163,16 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       ctx.lineJoin = "round";
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 3;
-      paintGuide(ctx, guidePaths, guideMode, size.w);
-    }, [size]); // eslint-disable-line react-hooks/exhaustive-deps
+      paintGuide(ctx, guidePaths, guideMode, logicalSize);
+      currentStroke.current = [];
+      allStrokes.current = [];
+    }, [logicalSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Redraw guide when guidePaths or guideMode changes (mode progression)
+    // Redraw guide when guidePaths or guideMode changes (level progression)
     const guideKey = `${guideMode ?? "none"}::${guidePaths?.join("|") ?? ""}`;
     useEffect(() => {
+      const ls = logicalSizeRef.current;
+      if (ls === 0) return;
       const c = canvasRef.current;
       if (!c) return;
       const ctx = c.getContext("2d");
@@ -154,7 +180,7 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       const dpr = dprRef.current;
       ctx.clearRect(0, 0, c.width, c.height);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paintGuide(ctx, guidePaths, guideMode, size.w);
+      paintGuide(ctx, guidePaths, guideMode, ls);
       currentStroke.current = [];
       allStrokes.current = [];
     }, [guideKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -209,7 +235,6 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         try { c.releasePointerCapture(ev.pointerId); } catch {}
         last.current = null;
         currentStroke.current = [];
-        // Reset to default color for next stroke
         const ctx = c.getContext("2d");
         if (ctx) ctx.strokeStyle = "#000";
       };
@@ -225,40 +250,64 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       };
     }, [onStrokeComplete, onStrokeStart, onRealtimeFeedback]);
 
-    return (
-      <div style={{ position: "relative", display: "inline-block" }}>
-        <canvas
-          ref={canvasRef}
-          width={size.w}
-          height={size.h}
+    // Percentage-based grid lines — adapt to any canvas size without pixel math
+    const gridLines = (
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          pointerEvents: "none",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <line x1="50" y1="0" x2="50" y2="100" stroke="#f0f0f0" strokeWidth="0.3" />
+        <line x1="0" y1="50" x2="100" y2="50" stroke="#f0f0f0" strokeWidth="0.3" />
+        <line x1="25" y1="0" x2="25" y2="100" stroke="#f8f8f8" strokeWidth="0.3" />
+        <line x1="75" y1="0" x2="75" y2="100" stroke="#f8f8f8" strokeWidth="0.3" />
+        <line x1="0" y1="25" x2="100" y2="25" stroke="#f8f8f8" strokeWidth="0.3" />
+        <line x1="0" y1="75" x2="100" y2="75" stroke="#f8f8f8" strokeWidth="0.3" />
+      </svg>
+    );
+
+    const canvas = (
+      <canvas
+        ref={canvasRef}
+        style={{
+          border: `3px solid ${borderColor}`,
+          display: "block",
+          touchAction: "none",
+          cursor: "crosshair",
+          background: "white",
+          transition: "border-color 0.3s ease",
+        }}
+      />
+    );
+
+    if (fluid) {
+      return (
+        <div
+          ref={containerRef}
           style={{
-            border: `3px solid ${borderColor}`,
-            display: "block",
-            touchAction: "none",
-            cursor: "crosshair",
-            background: "white",
-            transition: "border-color 0.3s ease",
-          }}
-        />
-        {/* Grid lines overlay (always on top, very subtle) */}
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            pointerEvents: "none",
-            width: width,
-            height: height,
+            width: "100%",
+            position: "relative",
+            // Hold space before first ResizeObserver measurement
+            ...(logicalSize === 0 ? { aspectRatio: "1 / 1" } : {}),
           }}
         >
-          <line x1={width / 2} y1="0" x2={width / 2} y2={height} stroke="#f0f0f0" strokeWidth="1" />
-          <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#f0f0f0" strokeWidth="1" />
-          <line x1={width / 4} y1="0" x2={width / 4} y2={height} stroke="#f8f8f8" strokeWidth="1" />
-          <line x1={(3 * width) / 4} y1="0" x2={(3 * width) / 4} y2={height} stroke="#f8f8f8" strokeWidth="1" />
-          <line x1="0" y1={height / 4} x2={width} y2={height / 4} stroke="#f8f8f8" strokeWidth="1" />
-          <line x1="0" y1={(3 * height) / 4} x2={width} y2={(3 * height) / 4} stroke="#f8f8f8" strokeWidth="1" />
-        </svg>
+          {canvas}
+          {gridLines}
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ position: "relative", display: "inline-block" }}>
+        {canvas}
+        {gridLines}
       </div>
     );
   },

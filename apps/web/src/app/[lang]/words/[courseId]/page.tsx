@@ -116,7 +116,7 @@ export default function WordPracticePage() {
           word={currentWord}
           level={level}
           lang={params.lang}
-          variant={params.lang === "ru-RU" ? "light" : "dark"}
+          variant="dark"
           onComplete={handleComplete}
         />
       </div>

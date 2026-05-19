@@ -478,9 +478,9 @@ export function validateStroke(
 export function validateCharacter(
   userStrokes: Point[][],
   svgPaths: string[],
-  options: { debug?: boolean; levelConfig?: LevelConfig } = {},
+  options: { debug?: boolean; levelConfig?: LevelConfig; canvasSize?: number } = {},
 ): CharacterResult {
-  const { debug = false, levelConfig = DEFAULT_LEVEL_CONFIG } = options;
+  const { debug = false, levelConfig = DEFAULT_LEVEL_CONFIG, canvasSize = 300 } = options;
 
   if (userStrokes.length !== svgPaths.length) {
     return {
@@ -492,7 +492,7 @@ export function validateCharacter(
   }
 
   const strokeResults = userStrokes.map((stroke, i) =>
-    validateStroke(stroke, svgPaths[i]!, { debug, levelConfig }),
+    validateStroke(stroke, svgPaths[i]!, { debug, levelConfig, canvasSize }),
   );
 
   const score = strokeResults.reduce((s, r) => s + r.score, 0) / strokeResults.length;

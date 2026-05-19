@@ -39,18 +39,14 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
   const [justMastered, setJustMastered] = useState(false);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
 
-  // Real-time gate tracking (all refs — no re-renders during drawing)
   const gateIndexRef = useRef(0);
   const currentStrokeIdxRef = useRef(0);
   const waypointsPerStrokeRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
   const practiceLevelRef = useRef(0);
-  // When true, level progression ignores the API response and advances locally (used by "Recommencer")
   const isRestartModeRef = useRef(false);
 
-  // Keep refs in sync with state
   useEffect(() => { practiceLevelRef.current = practiceLevel; }, [practiceLevel]);
 
-  // Precompute waypoints whenever character or practiceLevel changes
   useEffect(() => {
     const config = LEVEL_CONFIG[Math.min(practiceLevel, LEVEL_CONFIG.length - 1)]!;
     waypointsPerStrokeRef.current = character.svgPaths.map(path =>
@@ -60,7 +56,6 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
     currentStrokeIdxRef.current = 0;
   }, [character, practiceLevel]);
 
-  // Load current practiceLevel from DB on character change
   useEffect(() => {
     setIsLoadingLevel(true);
     setCurrentStrokes([]);
@@ -88,11 +83,9 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
     (point: { x: number; y: number }): "on" | "near" | "off" => {
       const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
       const waypoints = waypointsPerStrokeRef.current[currentStrokeIdxRef.current] ?? [];
-      // Gate advancement uses strict single-gate check
       if (shouldAdvanceGate(point, waypoints, gateIndexRef.current, config.tolerancePx)) {
         gateIndexRef.current += 1;
       }
-      // Coloring uses a window of gates for smooth between-gate feedback
       return getRealtimeStatus(point, waypoints, gateIndexRef.current, config.tolerancePx);
     },
     [],
@@ -130,7 +123,6 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
         const levelAtAttempt = practiceLevelRef.current;
         setTimeout(async () => {
           const data = await apiCall;
-          // In restart mode, progress locally level by level instead of jumping to the DB level
           const nextLevel = isRestartModeRef.current
             ? Math.min(LEVEL_CONFIG.length - 1, levelAtAttempt + 1)
             : (data?.practiceLevel ?? Math.min(LEVEL_CONFIG.length - 1, levelAtAttempt + 1));
@@ -161,56 +153,44 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
   }, []);
 
   if (isLoadingLevel) {
-    return <div style={{ padding: "20px", color: "#666", fontSize: "14px" }}>Chargement de votre progression…</div>;
+    return <div className="px-5 py-4 text-sm text-zinc-500">Chargement de votre progression…</div>;
   }
 
   const config = LEVEL_CONFIG[Math.min(practiceLevel, LEVEL_CONFIG.length - 1)]!;
   const isMastered = practiceLevel >= 5;
 
   return (
-    <div>
+    <div className="w-full space-y-3">
       {justMastered && (
-        <div style={{
-          marginBottom: "12px", padding: "12px 16px",
-          background: "#fef08a", border: "1px solid #fbbf24",
-          borderRadius: "8px", fontSize: "14px", color: "#854d0e", fontWeight: "bold",
-        }}>
+        <div className="px-4 py-3 bg-yellow-950 border border-yellow-500 rounded-xl text-sm text-yellow-200 font-bold">
           🎉 Félicitations ! Vous avez maîtrisé ce caractère !
         </div>
       )}
       {isMastered && !justMastered && (
-        <div style={{
-          marginBottom: "12px", padding: "8px 16px",
-          background: "#dcfce7", border: "1px solid #86efac",
-          borderRadius: "8px", fontSize: "14px", color: "#166534", fontWeight: "600",
-          display: "inline-block",
-        }}>
+        <div className="inline-block px-4 py-2 bg-green-950 border border-green-600 rounded-xl text-sm text-green-300 font-semibold">
           ⭐ Maîtrisé — continuez pour renforcer votre mémoire
         </div>
       )}
 
       {/* Level progress bar */}
-      <div style={{ marginBottom: "12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px", color: "#9ca3af" }}>
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs text-zinc-400">
           <span>{config.label} — {config.step}</span>
           <span>{Math.min(practiceLevel, 5)}/5</span>
         </div>
-        <div style={{ background: "#e5e7eb", borderRadius: "4px", height: "6px" }}>
-          <div style={{
-            background: isMastered ? "#22c55e" : "#3b82f6",
-            borderRadius: "4px",
-            height: "6px",
-            width: `${(Math.min(practiceLevel, 5) / 5) * 100}%`,
-            transition: "width 0.5s ease",
-          }} />
+        <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${isMastered ? "bg-green-500" : "bg-blue-500"}`}
+            style={{ width: `${(Math.min(practiceLevel, 5) / 5) * 100}%` }}
+          />
         </div>
       </div>
 
-      <div style={{ position: "relative", display: "inline-block" }}>
+      {/* Canvas + overlays */}
+      <div className="relative w-full">
         <DrawCanvas
           ref={canvasRef}
-          width={300}
-          height={300}
+          fluid
           onStrokeComplete={handleStrokeComplete}
           onStrokeStart={onStrokeStart}
           onRealtimeFeedback={onRealtimeFeedback}
@@ -228,74 +208,54 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
         />
 
         {isCorrect && (
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "rgba(34, 197, 94, 0.95)", color: "white",
-            borderRadius: "50%", width: "80px", height: "80px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "48px", fontWeight: "bold", animation: "popIn 0.3s ease-out",
-          }}>✓</div>
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-green-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none"
+            style={{ animation: "popIn 0.3s ease-out" }}
+          >
+            ✓
+          </div>
         )}
 
         {validationFeedback && !validationFeedback.isValid &&
           currentStrokes.length === character.svgPaths.length && (
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "rgba(239, 68, 68, 0.95)", color: "white",
-            borderRadius: "50%", width: "80px", height: "80px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "48px", fontWeight: "bold", animation: "popIn 0.3s ease-out",
-          }}>✗</div>
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-red-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none"
+            style={{ animation: "popIn 0.3s ease-out" }}
+          >
+            ✗
+          </div>
         )}
 
         {currentStrokes.length > 0 && (
-          <div style={{
-            position: "absolute", bottom: "12px", right: "12px",
-            background: "rgba(0,0,0,0.8)", color: "white",
-            padding: "6px 12px", borderRadius: "6px",
-            fontSize: "14px", fontWeight: "bold",
-          }}>
+          <div className="absolute bottom-3 right-3 bg-black/80 text-white px-3 py-1.5 rounded-md text-sm font-bold pointer-events-none">
             {currentStrokes.length}/{character.strokeCount}
           </div>
         )}
       </div>
 
+      {/* Validation feedback */}
       {validationFeedback && currentStrokes.length === character.svgPaths.length && (
-        <div style={{
-          marginTop: "16px", padding: "12px",
-          background: validationFeedback.isValid ? "#dcfce7" : "#fee2e2",
-          borderRadius: "8px", fontSize: "14px",
-          color: validationFeedback.isValid ? "#166534" : "#991b1b",
-        }}>
-          <p style={{ margin: 0, fontWeight: "bold" }}>{validationFeedback.feedback}</p>
-          <p style={{ margin: "4px 0 0 0", fontSize: "12px" }}>
-            Score : {Math.round(validationFeedback.score)}/100
-          </p>
+        <div className={`px-4 py-3 rounded-xl border text-sm ${
+          validationFeedback.isValid
+            ? "bg-green-950 border-green-700 text-green-300"
+            : "bg-red-950 border-red-700 text-red-300"
+        }`}>
+          <p className="font-bold">{validationFeedback.feedback}</p>
+          <p className="text-xs mt-1 opacity-70">Score : {Math.round(validationFeedback.score)}/100</p>
         </div>
       )}
 
-      <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
+      {/* Action buttons */}
+      <div className="flex gap-3">
         <button
           onClick={handleClear}
-          style={{
-            flex: 1, padding: "12px",
-            background: "#ef4444", color: "white",
-            border: "none", borderRadius: "8px",
-            cursor: "pointer", fontSize: "16px", fontWeight: "bold",
-          }}
+          className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-base font-bold transition-colors"
         >
           🗑️ Effacer
         </button>
         <button
           onClick={() => { isRestartModeRef.current = true; setPracticeLevel(0); setJustMastered(false); handleClear(); }}
-          style={{
-            flex: 1, padding: "12px",
-            background: "#6b7280", color: "white",
-            border: "none", borderRadius: "8px",
-            cursor: "pointer", fontSize: "16px", fontWeight: "bold",
-          }}
+          className="flex-1 h-12 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-base font-bold transition-colors"
         >
           🔄 Recommencer
         </button>
