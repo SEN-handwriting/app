@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
@@ -13,6 +14,8 @@ import {
 
 export function Navbar() {
   const { data } = useProfile();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const close = () => setMenuOpen(false);
 
   return (
     <div className="fixed top-0 z-50 w-full bg-black/20 py-4 backdrop-blur-lg">
