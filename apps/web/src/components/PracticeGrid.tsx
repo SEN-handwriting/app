@@ -5,6 +5,7 @@ import DrawCanvas, { DrawCanvasHandle } from "./DrawCanvas";
 import type { Character } from "../data/characters";
 import { validateCharacter, buildWaypoints, getRealtimeStatus, shouldAdvanceGate } from "../lib/stroke-validator";
 import type { LevelConfig } from "../lib/stroke-validator";
+import { cn } from "@repo/ui/lib/utils";
 
 const LEVEL_CONFIG: Array<LevelConfig & {
   guide: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots" | undefined;
@@ -22,6 +23,7 @@ const LEVEL_CONFIG: Array<LevelConfig & {
 interface PracticeGridProps {
   character: Character;
   onSuccess?: () => void;
+  canvasClassName?: string;
 }
 
 interface ValidationFeedback {
@@ -30,7 +32,7 @@ interface ValidationFeedback {
   feedback: string;
 }
 
-export default function PracticeGrid({ character, onSuccess }: PracticeGridProps) {
+export default function PracticeGrid({ character, onSuccess, canvasClassName }: PracticeGridProps) {
   const [practiceLevel, setPracticeLevel] = useState(0);
   const [isLoadingLevel, setIsLoadingLevel] = useState(true);
   const [currentStrokes, setCurrentStrokes] = useState<Array<Array<{ x: number; y: number }>>>([]);
@@ -186,8 +188,24 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
         </div>
       </div>
 
+      {/* Action buttons — above canvas so always visible without scroll */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleClear}
+          className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
+        >
+          🗑️ Effacer
+        </button>
+        <button
+          onClick={() => { setJustMastered(false); handleClear(); }}
+          className="flex-1 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-sm font-bold transition-colors"
+        >
+          🔄 Réessayer
+        </button>
+      </div>
+
       {/* Canvas + overlays */}
-      <div className="relative w-full">
+      <div className={cn("relative w-full", canvasClassName)}>
         <DrawCanvas
           ref={canvasRef}
           fluid
@@ -244,22 +262,6 @@ export default function PracticeGrid({ character, onSuccess }: PracticeGridProps
           <p className="text-xs mt-1 opacity-70">Score : {Math.round(validationFeedback.score)}/100</p>
         </div>
       )}
-
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleClear}
-          className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-base font-bold transition-colors"
-        >
-          🗑️ Effacer
-        </button>
-        <button
-          onClick={() => { isRestartModeRef.current = true; setPracticeLevel(0); setJustMastered(false); handleClear(); }}
-          className="flex-1 h-12 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-base font-bold transition-colors"
-        >
-          🔄 Recommencer
-        </button>
-      </div>
 
       <style>{`
         @keyframes popIn {

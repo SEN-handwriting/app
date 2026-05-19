@@ -17,10 +17,12 @@ export type CharacterPreviewHandle = {
 interface CharacterPreviewProps {
   character: Character;
   showStrokes: boolean;
+  size?: number;
+  showLabel?: boolean;
 }
 
 export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
-  function CharacterPreview({ character, showStrokes }, ref) {
+  function CharacterPreview({ character, showStrokes, size = 300, showLabel = true }, ref) {
     const pathRefs = useRef<Array<SVGPathElement | null>>([]);
     const timeouts = useRef<number[]>([]);
     const [animating, setAnimating] = useState(false);
@@ -94,8 +96,8 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
       <div>
         <svg
           viewBox="0 0 109 109"
-          width={300}
-          height={300}
+          width={size}
+          height={size}
           style={{ border: "2px solid #ddd", background: "white" }}
         >
           {/* Grille de guidage */}
@@ -134,11 +136,13 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
             ))}
         </svg>
 
-        <div style={{ marginTop: "10px" }}>
-          <p style={{ fontSize: "18px", fontWeight: "bold" }}>
-            {character.label}
-          </p>
-        </div>
+        {showLabel && (
+          <div style={{ marginTop: "10px" }}>
+            <p style={{ fontSize: "18px", fontWeight: "bold" }}>
+              {character.label}
+            </p>
+          </div>
+        )}
       </div>
     );
   },
