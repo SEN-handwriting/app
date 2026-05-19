@@ -32,6 +32,9 @@ export default function ProfilePage() {
 
   return (
     <main className="container mx-auto max-w-2xl px-4 py-6 pb-24 md:pb-10 space-y-6">
+      <Link href="/dashboard" className="inline-flex items-center text-zinc-400 hover:text-white text-sm transition-colors py-1">
+        ← Dashboard
+      </Link>
       {/* Avatar + nom */}
       <div className="flex items-center gap-4">
         <Avatar className="w-16 h-16 text-xl">

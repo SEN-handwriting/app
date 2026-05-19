@@ -12,17 +12,22 @@ export default async function HomePage() {
   const session = await getSession();
 
   if (session) {
+    const prefCount = await db.userLanguagePreference.count({
+      where: { userId: session.user.id },
+    });
+    if (prefCount === 0) {
+      redirect("/onboarding");
+    }
+
     const lastSession = await db.practiceSession.findFirst({
       where: { userId: session.user.id },
       orderBy: { startedAt: "desc" },
       include: { language: { select: { code: true } } },
     });
-
     if (lastSession) {
       redirect(`/langue/${encodeURIComponent(lastSession.language.code)}`);
-    } else {
-      redirect("/langue");
     }
+    redirect("/dashboard");
   }
 
   return (

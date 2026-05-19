@@ -99,6 +99,9 @@ export default function RevisionPage() {
 
   return (
     <main className="container mx-auto max-w-2xl px-4 py-6 pb-24 md:pb-10 space-y-6">
+      <Link href="/langue" className="inline-flex items-center text-zinc-400 hover:text-white text-sm transition-colors py-1">
+        ← Langues
+      </Link>
       <h1 className="text-2xl font-bold">Révisions</h1>
 
       {data.total === 0 ? (

@@ -4,6 +4,7 @@ import { db } from "@repo/database/client";
 import { notFound } from "next/navigation";
 import { cn } from "@repo/ui/lib/utils";
 import { getSession } from "../../../lib/auth-session";
+import { RotateCcw } from "lucide-react";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -73,6 +74,20 @@ export default async function LangPage({ params }: Props) {
           )}
         </h1>
       </div>
+
+      {userId && (
+        <Link
+          href="/revision"
+          className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 mb-6 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
+        >
+          <RotateCcw size={18} className="text-zinc-400 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Révisions</p>
+            <p className="text-xs text-zinc-500">Revoir les caractères appris</p>
+          </div>
+          <span className="ml-auto text-zinc-600 text-sm">→</span>
+        </Link>
+      )}
 
       {courses.length === 0 && (
         <p className="text-zinc-500">Aucun cours disponible.</p>
