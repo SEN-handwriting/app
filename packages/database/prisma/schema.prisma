@@ -25,7 +25,8 @@ model User {
   userStats   UserStats[]
   progress    UserProgress[]
   sessions2   PracticeSession[]
-  userCourses UserCourse[]
+  userCourses   UserCourse[]
+  languagePrefs UserLanguagePreference[]
 
   stats String?
 
@@ -112,6 +113,7 @@ model Language {
   sessions   PracticeSession[]
   words      Word[]
   phrases    Phrase[]
+  userPrefs  UserLanguagePreference[]
 
   @@map("language")
 }
@@ -299,6 +301,25 @@ model UserCourse {
   @@map("user_course")
   @@index([userId])
   @@index([courseId])
+}
+
+// ─── Préférences de langue utilisateur ───────────────────────────────────────
+
+model UserLanguagePreference {
+  id         String   @id @default(cuid())
+  userId     String
+  languageId String
+  /// "active" | "inactive"
+  status     String   @default("active")
+  addedAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, languageId])
+  @@map("user_language_preference")
+  @@index([userId])
+  @@index([languageId])
 }
 
 // ─── Tentatives de tracé ─────────────────────────────────────────────────────
