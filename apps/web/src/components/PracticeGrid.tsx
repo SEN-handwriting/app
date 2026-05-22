@@ -43,22 +43,21 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   const [justMastered, setJustMastered] = useState(false);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
 
-  // fillHeight mode: measure canvas area to create a perfectly-sized square wrapper
-  const canvasAreaRef = useRef<HTMLDivElement>(null);
+  // fillHeight mode: callback ref so we re-observe whenever the div mounts/unmounts
+  // (a plain useRef + useEffect misses the mount that happens after isLoadingLevel → false)
+  const [canvasAreaEl, setCanvasAreaEl] = useState<HTMLDivElement | null>(null);
   const [canvasAreaSize, setCanvasAreaSize] = useState(0);
   useEffect(() => {
-    if (!fillHeight) return;
-    const el = canvasAreaRef.current;
-    if (!el) return;
+    if (!fillHeight || !canvasAreaEl) return;
     const ro = new ResizeObserver((entries) => {
       const rect = entries[0]?.contentRect;
       if (!rect) return;
       const size = Math.min(Math.floor(rect.width), Math.floor(rect.height));
       if (size > 0) setCanvasAreaSize(size);
     });
-    ro.observe(el);
+    ro.observe(canvasAreaEl);
     return () => ro.disconnect();
-  }, [fillHeight]);
+  }, [fillHeight, canvasAreaEl]);
 
   const gateIndexRef = useRef(0);
   const currentStrokeIdxRef = useRef(0);
@@ -226,7 +225,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       {/* Canvas + overlays */}
       {fillHeight ? (
         // fillHeight: measured area → inner square wrapper → overlays correctly positioned
-        <div ref={canvasAreaRef} className="flex-1 min-h-0 flex items-center justify-center">
+        <div ref={setCanvasAreaEl} className="flex-1 min-h-0 flex items-center justify-center">
           {canvasAreaSize > 0 && (
             <div className="relative" style={{ width: canvasAreaSize, height: canvasAreaSize }}>
               <DrawCanvas
