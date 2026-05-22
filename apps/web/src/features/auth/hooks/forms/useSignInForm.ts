@@ -17,6 +17,7 @@ export function useSignInForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handleSignIn(data: SignInSchemaInput) {
     setError(null);
@@ -26,7 +27,8 @@ export function useSignInForm() {
       if (result?.error) {
         setError(result.error.message ?? "Email ou mot de passe incorrect.");
       } else {
-        router.push("/");
+        setSuccess(true);
+        setTimeout(() => router.push("/"), 1500);
       }
     } catch {
       setError("Une erreur est survenue. Réessaie.");
@@ -35,5 +37,5 @@ export function useSignInForm() {
     }
   }
 
-  return { form, signIn: handleSignIn, error, isPending };
+  return { form, signIn: handleSignIn, error, isPending, success };
 }

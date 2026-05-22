@@ -19,6 +19,7 @@ export function useSignUpForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handleSignUp(data: SignUpSchemaInput) {
     setError(null);
@@ -28,7 +29,8 @@ export function useSignUpForm() {
       if (result?.error) {
         setError(result.error.message ?? "Impossible de créer le compte.");
       } else {
-        router.push("/");
+        setSuccess(true);
+        setTimeout(() => router.push("/onboarding"), 1500);
       }
     } catch {
       setError("Une erreur est survenue. Réessaie.");
@@ -37,5 +39,5 @@ export function useSignUpForm() {
     }
   }
 
-  return { form, signUp: handleSignUp, error, isPending };
+  return { form, signUp: handleSignUp, error, isPending, success };
 }
