@@ -172,6 +172,17 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
     currentStrokeIdxRef.current = 0;
   }, []);
 
+  const handleReset = useCallback(() => {
+    setPracticeLevel(0);
+    setJustMastered(false);
+    setCurrentStrokes([]);
+    setIsCorrect(false);
+    setValidationFeedback(null);
+    gateIndexRef.current = 0;
+    currentStrokeIdxRef.current = 0;
+    canvasRef.current?.clear();
+  }, []);
+
   if (isLoadingLevel) {
     return <div className="px-5 py-4 text-sm text-zinc-500">Chargement de votre progression…</div>;
   }
@@ -208,13 +219,13 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
             </div>
           </div>
           <button
-            onClick={handleClear}
+            onClick={handleReset}
             className="shrink-0 h-8 px-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold transition-colors"
           >
             🗑️
           </button>
           <button
-            onClick={() => { setJustMastered(false); handleClear(); }}
+            onClick={handleClear}
             className="shrink-0 h-8 px-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-xs font-bold transition-colors"
           >
             🔄
@@ -239,13 +250,13 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
           {/* Action buttons */}
           <div className="flex gap-3">
             <button
-              onClick={handleClear}
+              onClick={handleReset}
               className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
             >
               🗑️ Effacer
             </button>
             <button
-              onClick={() => { setJustMastered(false); handleClear(); }}
+              onClick={handleClear}
               className="flex-1 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-sm font-bold transition-colors"
             >
               🔄 Réessayer
