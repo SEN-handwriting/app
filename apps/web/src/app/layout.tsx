@@ -5,9 +5,9 @@ import "./globals.css";
 import { ReactQueryProvider } from "#/providers/ReactQueryProvider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
+import Script from "next/script";
 import { Navbar } from "#/components/layouts/Navbar";
 import { BottomNav } from "#/components/layouts/BottomNav";
-import { ServiceWorkerRegistrar } from "#/components/ServiceWorkerRegistrar";
 
 const fontSans = Sen({
   weight: ["400", "500", "600", "700", "800"],
@@ -58,7 +58,13 @@ export default function RootLayout({
               <div className="absolute right-0 bottom-0 size-1/2 rounded-full bg-[#0083D4] blur-[100vw]" />
             </div>
 
-            <ServiceWorkerRegistrar />
+            <Script
+              id="sw-register"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}`,
+              }}
+            />
             <Navbar />
             <div className="pt-16">{children}</div>
             <BottomNav />
