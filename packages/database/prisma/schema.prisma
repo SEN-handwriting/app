@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ─── Auth (better-auth) ───────────────────────────────────────────────────────
@@ -167,7 +167,6 @@ model Character {
   jlpt        String?
   courseLevel Int     @default(1)
 
-  // Tableaux sérialisés en JSON (SQLite ne supporte pas les tableaux natifs)
   /// JSON: string[]  — chemins SVG des traits
   svgPaths String
   /// JSON: string[]  — ex: ["hiragana a"]

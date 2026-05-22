@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
-    "build": "echo 'Add build script here'",
+    "start": "bun ./src/index.ts",
+    "build": "cd ../../packages/database && bunx prisma generate",
     "test": "echo 'Add test script here'",
     "lint": "echo 'Add lint script here'"
   },
