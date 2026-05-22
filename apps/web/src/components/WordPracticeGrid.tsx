@@ -13,9 +13,9 @@ import type { LevelConfig } from "../lib/stroke-validator"
 interface Word {
   id: string
   text: string
-  reading: string
+  reading?: string | null
   meaning: string
-  audioText?: string
+  audioText?: string | null
 }
 
 interface WordPracticeGridProps {
