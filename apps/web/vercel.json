@@ -1,0 +1,3 @@
+{
+  "buildCommand": "(cd ../../packages/database && bunx prisma generate) && bunx next build --webpack"
+}
