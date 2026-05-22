@@ -193,9 +193,7 @@ function LetterBox({ index, letter, paths, canvasSize, cfg, isDark, onValid }: L
 export default function WordPracticeGrid({ word, level, lang, variant, onComplete }: WordPracticeGridProps) {
   const cfg      = LEVEL_CONFIG[Math.max(0, Math.min(5, level - 1))]!
   const isDark   = variant === "dark"
-  const isRussian = lang === "ru-RU"
-  const displayText = isRussian ? word.text.toUpperCase() : word.text
-  const letters  = Array.from(displayText)
+  const letters  = Array.from(word.text)
   const n        = letters.length
 
   const [letterPaths, setLetterPaths] = useState<Record<string, string[]>>({})
@@ -270,7 +268,7 @@ export default function WordPracticeGrid({ word, level, lang, variant, onComplet
         className={`text-4xl font-normal tracking-[0.18em] select-none ${isDark ? "text-zinc-500" : "text-gray-300"}`}
         style={{ fontFamily: "'Noto Sans', sans-serif" }}
       >
-        {displayText}
+        {word.text}
       </div>
 
       {/* Progress */}

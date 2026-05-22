@@ -32,11 +32,14 @@ export async function GET(req: NextRequest) {
     const result = words.map((w) => ({
       id: w.id,
       text: w.text,
+      kana: w.kana,
       reading: w.reading,
       meaning: w.meaning,
       audioText: w.audioText,
       courseLevel: w.course!.level,
       lang: w.course!.language.code,
+      etymology: w.etymology,
+      components: w.components ? JSON.parse(w.components) : null,
     }));
 
     return NextResponse.json(result);

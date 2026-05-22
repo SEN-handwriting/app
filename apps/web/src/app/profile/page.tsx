@@ -3,6 +3,7 @@
 import { useProfile } from "#auth/hooks/useProfile";
 import { logout } from "#auth/actions";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/components/avatar";
 
@@ -10,17 +11,18 @@ export default function ProfilePage() {
   const { data, isPending } = useProfile();
   const router = useRouter();
 
-  if (isPending) {
+  useEffect(() => {
+    if (!isPending && !data?.user) {
+      router.replace("/sign-in");
+    }
+  }, [isPending, data, router]);
+
+  if (isPending || !data?.user) {
     return (
       <div className="grid min-h-dvh content-center">
         <p className="text-center text-zinc-400">Chargement…</p>
       </div>
     );
-  }
-
-  if (!data?.user) {
-    router.replace("/sign-in");
-    return null;
   }
 
   const { user } = data;

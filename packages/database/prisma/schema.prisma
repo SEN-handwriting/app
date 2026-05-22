@@ -133,6 +133,11 @@ model Course {
   description String?
   createdAt   DateTime @default(now())
 
+  /// Cours de caractères à maîtriser (≥60%) avant de débloquer ce cours
+  prerequisiteId String?
+  prerequisite   Course?  @relation("CoursePrerequisite", fields: [prerequisiteId], references: [id])
+  dependents     Course[] @relation("CoursePrerequisite")
+
   characters  Character[]
   words       Word[]
   phrases     Phrase[]
@@ -246,14 +251,20 @@ model Word {
   courseId    String?
   course      Course?  @relation(fields: [courseId], references: [id])
 
-  /// Le mot en langue cible ex: "あおい", "кот"
+  /// Le mot en langue cible ex: "水", "кот"
   text        String
-  /// Lecture romanisée ex: "aoi", "kot"
+  /// Lecture kana ex: "みず" (japonais uniquement)
+  kana        String?
+  /// Lecture romanisée ex: "mizu", "kot"
   reading     String?
-  /// Traduction ex: "bleu", "chat"
+  /// Traduction ex: "eau", "chat"
   meaning     String
   audioText   String?
   courseLevel Int      @default(1)
+  /// Étymologie courte du kanji / mot
+  etymology   String?
+  /// Composants JSON [{char, meaning}]
+  components  String?
 
   createdAt   DateTime @default(now())
 

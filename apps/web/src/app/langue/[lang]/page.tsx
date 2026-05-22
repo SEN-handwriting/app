@@ -22,11 +22,21 @@ export default async function LangPage({ params }: Props) {
   if (!language) notFound();
   const userId = session?.user.id ?? null;
 
-  const [courses, progressRows] = await Promise.all([
+  const [courses, wordCourses, phraseCourses, progressRows] = await Promise.all([
     db.course.findMany({
       where: { languageId: language.id, type: "character" },
       orderBy: { level: "asc" },
       include: { characters: { orderBy: { id: "asc" } } },
+    }),
+    db.course.findMany({
+      where: { languageId: language.id, type: "word" },
+      orderBy: { level: "asc" },
+      include: { words: true },
+    }),
+    db.course.findMany({
+      where: { languageId: language.id, type: "phrase" },
+      orderBy: { level: "asc" },
+      include: { phrases: true },
     }),
     userId
       ? db.userProgress.findMany({
@@ -35,6 +45,8 @@ export default async function LangPage({ params }: Props) {
         })
       : Promise.resolve([]),
   ]);
+
+  // ── Progression par caractère ──────────────────────────────────────────────
 
   const progressByCharId = new Map(progressRows.map((r) => [r.characterId, r.practiceLevel]));
 
@@ -45,6 +57,8 @@ export default async function LangPage({ params }: Props) {
     ).length;
     masteredByCourse.set(course.id, count);
   }
+
+  // ── Verrouillage des cours de caractères (séquentiel) ─────────────────────
 
   const lockedCourseIds = new Set<string>();
   for (let i = 1; i < courses.length; i++) {
@@ -58,6 +72,29 @@ export default async function LangPage({ params }: Props) {
     if (total === 0 || mastered / total < UNLOCK_THRESHOLD) {
       lockedCourseIds.add(courses[i]!.id);
     }
+  }
+
+  // ── Verrouillage des cours mots/phrases (basé sur le prérequis caractères) ─
+
+  const courseById = new Map(courses.map((c) => [c.id, c]));
+
+  function prereqMet(prerequisiteId: string | null | undefined): boolean {
+    if (!prerequisiteId) return true;
+    const prereq = courseById.get(prerequisiteId);
+    if (!prereq) return false;
+    const mastered = masteredByCourse.get(prereq.id) ?? 0;
+    const total = prereq.characters.length;
+    return total > 0 && mastered / total >= UNLOCK_THRESHOLD;
+  }
+
+  function prereqLabel(prerequisiteId: string | null | undefined): string {
+    if (!prerequisiteId) return "";
+    const prereq = courseById.get(prerequisiteId);
+    if (!prereq) return "";
+    const mastered = masteredByCourse.get(prereq.id) ?? 0;
+    const total = prereq.characters.length;
+    const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
+    return `${prereq.title} — ${pct}% / ${Math.ceil(UNLOCK_THRESHOLD * 100)}% requis`;
   }
 
   return (
@@ -93,6 +130,13 @@ export default async function LangPage({ params }: Props) {
         <p className="text-zinc-500">Aucun cours disponible.</p>
       )}
 
+      {/* ── Caractères ──────────────────────────────────────────────────────── */}
+      {courses.length > 0 && (
+        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mb-2">
+          Caractères
+        </h2>
+      )}
+
       <div className="grid gap-4">
         {courses.map((course) => {
           const chars = course.characters;
@@ -111,7 +155,6 @@ export default async function LangPage({ params }: Props) {
                   : "border-zinc-700 bg-zinc-900",
               )}
             >
-              {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
                   <h2 className={cn("text-lg font-semibold", isLocked && "text-zinc-500")}>
@@ -136,7 +179,6 @@ export default async function LangPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Progress bar */}
               {userId && !isLocked && total > 0 && (
                 <div className="mb-3">
                   <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
@@ -148,7 +190,6 @@ export default async function LangPage({ params }: Props) {
                 </div>
               )}
 
-              {/* Character grid */}
               <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(68px, 1fr))" }}>
                 {chars.map((c) => {
                   const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
@@ -188,6 +229,96 @@ export default async function LangPage({ params }: Props) {
                 })}
               </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* ── Mots ────────────────────────────────────────────────────────────── */}
+      {wordCourses.length > 0 && (
+        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
+          Mots
+        </h2>
+      )}
+      <div className="grid gap-3">
+        {wordCourses.map((course) => {
+          const isLocked = !prereqMet(course.prerequisiteId);
+          const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
+
+          if (isLocked) {
+            return (
+              <div
+                key={course.id}
+                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
+                  {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
+                  <p className="text-xs text-zinc-700 mt-0.5">{course.words.length} mots</p>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={course.id}
+              href={`/${encodeURIComponent(lang)}/words/${course.level}`}
+              className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{course.title}</p>
+                {course.description && (
+                  <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
+                )}
+                <p className="text-xs text-zinc-600 mt-0.5">{course.words.length} mots</p>
+              </div>
+              <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* ── Phrases ─────────────────────────────────────────────────────────── */}
+      {phraseCourses.length > 0 && (
+        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
+          Phrases
+        </h2>
+      )}
+      <div className="grid gap-3">
+        {phraseCourses.map((course) => {
+          const isLocked = !prereqMet(course.prerequisiteId);
+          const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
+
+          if (isLocked) {
+            return (
+              <div
+                key={course.id}
+                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
+                  {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
+                  <p className="text-xs text-zinc-700 mt-0.5">{course.phrases.length} phrases</p>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={course.id}
+              href={`/${encodeURIComponent(lang)}/phrases/${course.level}`}
+              className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{course.title}</p>
+                {course.description && (
+                  <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
+                )}
+                <p className="text-xs text-zinc-600 mt-0.5">{course.phrases.length} phrases</p>
+              </div>
+              <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
+            </Link>
           );
         })}
       </div>

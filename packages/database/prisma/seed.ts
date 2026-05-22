@@ -1,10 +1,11 @@
 import { db } from "../src/client";
 import ruCursive from '../data/ru-cursive.json';
+import ruCursiveLower from '../data/ru-cursive-lower.json';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type LanguageSeed = { id: string; code: string; name: string; script: string };
-type CourseSeed   = { id: string; languageId: string; type: string; level: number; title: string; description?: string };
+type CourseSeed   = { id: string; languageId: string; type: string; level: number; title: string; description?: string; prerequisiteId?: string };
 type CharSeed     = {
   id: string; languageId: string; courseId: string;
   label: string; audioText: string; svgPaths: string[];
@@ -36,29 +37,59 @@ const COURSES: CourseSeed[] = [
   { id: "course-ja-char-9",  languageId: "lang-ja", type: "character", level: 9,  title: "Série R — らりるれろ",   description: "Syllabes de la rangée R" },
   { id: "course-ja-char-10", languageId: "lang-ja", type: "character", level: 10, title: "Série W — わをん",        description: "Syllabes finales わをん" },
 
-  // ── Cyrillique — Caractères ───────────────────────────────────────────────
-  { id: "course-ru-char-1", languageId: "lang-ru", type: "character", level: 1, title: "Voyelles — А О У И Э Е Ю Я",        description: "Les 8 voyelles cyrilliques essentielles" },
-  { id: "course-ru-char-2", languageId: "lang-ru", type: "character", level: 2, title: "Consonnes I — Н Т М К Л П С Р Б В",  description: "10 consonnes cyrilliques courantes" },
-  { id: "course-ru-char-3", languageId: "lang-ru", type: "character", level: 3, title: "Consonnes II — Г Д З Й Ф Х",         description: "6 consonnes cyrilliques fréquentes" },
-  { id: "course-ru-char-4", languageId: "lang-ru", type: "character", level: 4, title: "Consonnes III — Ж Ц Ч Ш",            description: "4 consonnes cyrilliques complexes" },
-  { id: "course-ru-char-5", languageId: "lang-ru", type: "character", level: 5, title: "Signes spéciaux — Щ Ъ Ы Ь Ё",        description: "Les 5 caractères spéciaux de l'alphabet russe" },
+  // ── Cyrillique — Majuscules (1-5) ─────────────────────────────────────────
+  { id: "course-ru-char-1", languageId: "lang-ru", type: "character", level: 1, title: "Majuscules — Voyelles А О У И Э Е Ю Я",       description: "Les 8 voyelles cyrilliques en lettres majuscules" },
+  { id: "course-ru-char-2", languageId: "lang-ru", type: "character", level: 2, title: "Majuscules — Consonnes I Н Т М К Л П С Р Б В", description: "10 consonnes cyrilliques courantes en majuscules" },
+  { id: "course-ru-char-3", languageId: "lang-ru", type: "character", level: 3, title: "Majuscules — Consonnes II Г Д З Й Ф Х",        description: "6 consonnes cyrilliques fréquentes en majuscules" },
+  { id: "course-ru-char-4", languageId: "lang-ru", type: "character", level: 4, title: "Majuscules — Consonnes III Ж Ц Ч Ш",           description: "4 consonnes cyrilliques complexes en majuscules" },
+  { id: "course-ru-char-5", languageId: "lang-ru", type: "character", level: 5, title: "Majuscules — Signes spéciaux Щ Ъ Ы Ь Ё",       description: "Les 5 caractères spéciaux en majuscules" },
+
+  // ── Cyrillique — Minuscules (6-10) ────────────────────────────────────────
+  { id: "course-ru-char-6",  languageId: "lang-ru", type: "character", level: 6,  title: "Minuscules — Voyelles а о у и э е ю я",       description: "Les 8 voyelles cyrilliques en lettres minuscules" },
+  { id: "course-ru-char-7",  languageId: "lang-ru", type: "character", level: 7,  title: "Minuscules — Consonnes I н т м к л п с р б в", description: "10 consonnes cyrilliques courantes en minuscules" },
+  { id: "course-ru-char-8",  languageId: "lang-ru", type: "character", level: 8,  title: "Minuscules — Consonnes II г д з й ф х",        description: "6 consonnes cyrilliques fréquentes en minuscules" },
+  { id: "course-ru-char-9",  languageId: "lang-ru", type: "character", level: 9,  title: "Minuscules — Consonnes III ж ц ч ш",           description: "4 consonnes cyrilliques complexes en minuscules" },
+  { id: "course-ru-char-10", languageId: "lang-ru", type: "character", level: 10, title: "Minuscules — Signes spéciaux щ ъ ы ь ё",       description: "Les 5 caractères spéciaux en minuscules" },
 
   // ── Mots — Japonais ───────────────────────────────────────────────────────
-  { id: "course-ja-word-1", languageId: "lang-ja", type: "word", level: 1, title: "Mots essentiels — Nature", description: "Vocabulaire de base en hiragana : nature & objets" },
-  { id: "course-ja-word-2", languageId: "lang-ja", type: "word", level: 2, title: "Mots essentiels — Animaux & Couleurs", description: "Animaux et couleurs courants en hiragana" },
+  // Débloqué après les 3 premières séries hiragana (あ→そ — 15 caractères)
+  { id: "course-ja-word-1", languageId: "lang-ja", type: "word", level: 1, title: "Mots — Nature & Éléments",  description: "Kanji de base : eau, feu, arbre, montagne…", prerequisiteId: "course-ja-char-3" },
+  // Débloqué après les 7 premières séries (あ→も — 35 caractères)
+  { id: "course-ja-word-2", languageId: "lang-ja", type: "word", level: 2, title: "Mots — Animaux & Couleurs", description: "Kanji : chien, chat, oiseau, bleu, rouge…",    prerequisiteId: "course-ja-char-7" },
 
-  // ── Mots — Russe ──────────────────────────────────────────────────────────
-  { id: "course-ru-word-1", languageId: "lang-ru", type: "word", level: 1, title: "Mots essentiels — Famille & Vie quotidienne", description: "Vocabulaire de base cyrillique" },
-  { id: "course-ru-word-2", languageId: "lang-ru", type: "word", level: 2, title: "Mots essentiels — Nature & Nourriture", description: "Nature et nourriture en cyrillique" },
+  // ── Mots — Russe (majuscules d'abord, puis minuscules) ────────────────────
+  // Débloqué après les 3 premiers cours majuscules (voyelles + 2 séries consonnes)
+  { id: "course-ru-word-1", languageId: "lang-ru", type: "word", level: 1, title: "Mots Majuscules — Famille & Quotidien", description: "Mots courants en lettres capitales", prerequisiteId: "course-ru-char-3" },
+  // Débloqué après tous les cours majuscules (5/5)
+  { id: "course-ru-word-2", languageId: "lang-ru", type: "word", level: 2, title: "Mots Majuscules — Nature & Nourriture",  description: "Nature et nourriture en lettres capitales", prerequisiteId: "course-ru-char-5" },
+  // Débloqué après les 3 premiers cours minuscules
+  { id: "course-ru-word-3", languageId: "lang-ru", type: "word", level: 3, title: "Mots Minuscules — Famille & Quotidien", description: "Les mêmes mots en lettres minuscules", prerequisiteId: "course-ru-char-8" },
+  // Débloqué après tous les cours minuscules (10/10)
+  { id: "course-ru-word-4", languageId: "lang-ru", type: "word", level: 4, title: "Mots Minuscules — Nature & Nourriture",  description: "Nature et nourriture en lettres minuscules", prerequisiteId: "course-ru-char-10" },
+
+  // ── Phrases — Japonais ────────────────────────────────────────────────────
+  { id: "course-ja-phrase-1", languageId: "lang-ja", type: "phrase", level: 1, title: "Phrases — Salutations", description: "Expressions de base pour saluer et remercier", prerequisiteId: "course-ja-char-5" },
+  { id: "course-ja-phrase-2", languageId: "lang-ja", type: "phrase", level: 2, title: "Phrases — Présentation", description: "Se présenter et engager une conversation simple", prerequisiteId: "course-ja-char-10" },
+
+  // ── Phrases — Russe ───────────────────────────────────────────────────────
+  { id: "course-ru-phrase-1", languageId: "lang-ru", type: "phrase", level: 1, title: "Phrases — Salutations", description: "Expressions essentielles pour saluer et répondre", prerequisiteId: "course-ru-char-5" },
+  { id: "course-ru-phrase-2", languageId: "lang-ru", type: "phrase", level: 2, title: "Phrases — Présentation", description: "Se présenter et gérer les situations courantes", prerequisiteId: "course-ru-char-10" },
 ];
 
-// ─── Cursive path lookup maps (ru-cursive.json) ───────────────────────────────
+// ─── Cursive path lookup maps ─────────────────────────────────────────────────
 
 const cursivePathMap = new Map<string, string[]>(
   ruCursive.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
 );
 const cursiveStrokeCountMap = new Map<string, number>(
   ruCursive.characters.map((c) => [c.id, c.strokeCount])
+);
+
+const cursiveLowerPathMap = new Map<string, string[]>(
+  ruCursiveLower.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
+);
+const cursiveLowerStrokeCountMap = new Map<string, number>(
+  ruCursiveLower.characters.map((c) => [c.id, c.strokeCount])
 );
 
 // ─── Caractères ───────────────────────────────────────────────────────────────
@@ -600,54 +631,293 @@ const CHARACTERS: CharSeed[] = [
   { id: "cyrillic-yeru", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ы", audioText: "Ы", strokeCount: cursiveStrokeCountMap.get("cyrillic-yeru") ?? 3, courseLevel: 5, meanings: ["voyelle y"],    romaji: ["y"],    svgPaths: cursivePathMap.get("cyrillic-yeru") ?? ["M22,20L22,90", "M22,55C45,55 55,60 55,72C55,84 45,90 22,90", "M72,20L72,90"] },
   { id: "cyrillic-soft-sign", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ь", audioText: "Ь", strokeCount: cursiveStrokeCountMap.get("cyrillic-soft-sign") ?? 2, courseLevel: 5, meanings: ["signe mou"],    romaji: ["ʹ"],    svgPaths: cursivePathMap.get("cyrillic-soft-sign") ?? ["M25,20L25,90", "M25,55C55,55 65,60 65,72C65,84 55,90 25,90"] },
   { id: "cyrillic-yo", languageId: "lang-ru", courseId: "course-ru-char-5", label: "Ё", audioText: "Ё", strokeCount: cursiveStrokeCountMap.get("cyrillic-yo") ?? 6, courseLevel: 5, meanings: ["voyelle yo"],   romaji: ["yo"],   svgPaths: cursivePathMap.get("cyrillic-yo") ?? ["M28,22L28,90", "M28,22L80,22", "M28,56L72,56", "M28,90L80,90", "M36,10L44,10", "M62,10L70,10"] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE MINUSCULES — Cours 6 : Voyelles а о у и э е ю я
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-a-lower",  languageId: "lang-ru", courseId: "course-ru-char-6", label: "а", audioText: "а", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-a-lower")  ?? 2, courseLevel: 6, meanings: ["voyelle a"],   romaji: ["a"],   svgPaths: cursiveLowerPathMap.get("cyrillic-a-lower")  ?? [] },
+  { id: "cyrillic-o-lower",  languageId: "lang-ru", courseId: "course-ru-char-6", label: "о", audioText: "о", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-o-lower")  ?? 1, courseLevel: 6, meanings: ["voyelle o"],   romaji: ["o"],   svgPaths: cursiveLowerPathMap.get("cyrillic-o-lower")  ?? [] },
+  { id: "cyrillic-u-lower",  languageId: "lang-ru", courseId: "course-ru-char-6", label: "у", audioText: "у", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-u-lower")  ?? 2, courseLevel: 6, meanings: ["voyelle ou"],  romaji: ["ou"],  svgPaths: cursiveLowerPathMap.get("cyrillic-u-lower")  ?? [] },
+  { id: "cyrillic-i-lower",  languageId: "lang-ru", courseId: "course-ru-char-6", label: "и", audioText: "и", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-i-lower")  ?? 2, courseLevel: 6, meanings: ["voyelle i"],   romaji: ["i"],   svgPaths: cursiveLowerPathMap.get("cyrillic-i-lower")  ?? [] },
+  { id: "cyrillic-e-lower",  languageId: "lang-ru", courseId: "course-ru-char-6", label: "э", audioText: "э", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-e-lower")  ?? 2, courseLevel: 6, meanings: ["voyelle é"],   romaji: ["é"],   svgPaths: cursiveLowerPathMap.get("cyrillic-e-lower")  ?? [] },
+  { id: "cyrillic-ye-lower", languageId: "lang-ru", courseId: "course-ru-char-6", label: "е", audioText: "е", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-ye-lower") ?? 2, courseLevel: 6, meanings: ["voyelle yé"],  romaji: ["yé"],  svgPaths: cursiveLowerPathMap.get("cyrillic-ye-lower") ?? [] },
+  { id: "cyrillic-yu-lower", languageId: "lang-ru", courseId: "course-ru-char-6", label: "ю", audioText: "ю", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-yu-lower") ?? 3, courseLevel: 6, meanings: ["voyelle you"], romaji: ["you"], svgPaths: cursiveLowerPathMap.get("cyrillic-yu-lower") ?? [] },
+  { id: "cyrillic-ya-lower", languageId: "lang-ru", courseId: "course-ru-char-6", label: "я", audioText: "я", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-ya-lower") ?? 2, courseLevel: 6, meanings: ["voyelle ya"],  romaji: ["ya"],  svgPaths: cursiveLowerPathMap.get("cyrillic-ya-lower") ?? [] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE MINUSCULES — Cours 7 : Consonnes I н т м к л п с р б в
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-n-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "н", audioText: "н", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-n-lower")  ?? 3, courseLevel: 7, meanings: ["consonne n"], romaji: ["n"], svgPaths: cursiveLowerPathMap.get("cyrillic-n-lower")  ?? [] },
+  { id: "cyrillic-t-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "т", audioText: "т", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-t-lower")  ?? 2, courseLevel: 7, meanings: ["consonne t"], romaji: ["t"], svgPaths: cursiveLowerPathMap.get("cyrillic-t-lower")  ?? [] },
+  { id: "cyrillic-m-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "м", audioText: "м", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-m-lower")  ?? 1, courseLevel: 7, meanings: ["consonne m"], romaji: ["m"], svgPaths: cursiveLowerPathMap.get("cyrillic-m-lower")  ?? [] },
+  { id: "cyrillic-k-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "к", audioText: "к", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-k-lower")  ?? 2, courseLevel: 7, meanings: ["consonne k"], romaji: ["k"], svgPaths: cursiveLowerPathMap.get("cyrillic-k-lower")  ?? [] },
+  { id: "cyrillic-l-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "л", audioText: "л", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-l-lower")  ?? 1, courseLevel: 7, meanings: ["consonne l"], romaji: ["l"], svgPaths: cursiveLowerPathMap.get("cyrillic-l-lower")  ?? [] },
+  { id: "cyrillic-p-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "п", audioText: "п", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-p-lower")  ?? 1, courseLevel: 7, meanings: ["consonne p"], romaji: ["p"], svgPaths: cursiveLowerPathMap.get("cyrillic-p-lower")  ?? [] },
+  { id: "cyrillic-s-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "с", audioText: "с", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-s-lower")  ?? 1, courseLevel: 7, meanings: ["consonne s"], romaji: ["s"], svgPaths: cursiveLowerPathMap.get("cyrillic-s-lower")  ?? [] },
+  { id: "cyrillic-r-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "р", audioText: "р", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-r-lower")  ?? 1, courseLevel: 7, meanings: ["consonne r"], romaji: ["r"], svgPaths: cursiveLowerPathMap.get("cyrillic-r-lower")  ?? [] },
+  { id: "cyrillic-b-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "б", audioText: "б", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-b-lower")  ?? 1, courseLevel: 7, meanings: ["consonne b"], romaji: ["b"], svgPaths: cursiveLowerPathMap.get("cyrillic-b-lower")  ?? [] },
+  { id: "cyrillic-v-lower",  languageId: "lang-ru", courseId: "course-ru-char-7", label: "в", audioText: "в", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-v-lower")  ?? 2, courseLevel: 7, meanings: ["consonne v"], romaji: ["v"], svgPaths: cursiveLowerPathMap.get("cyrillic-v-lower")  ?? [] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE MINUSCULES — Cours 8 : Consonnes II г д з й ф х
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-g-lower",  languageId: "lang-ru", courseId: "course-ru-char-8", label: "г", audioText: "г", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-g-lower")  ?? 1, courseLevel: 8, meanings: ["consonne g"],  romaji: ["g"],  svgPaths: cursiveLowerPathMap.get("cyrillic-g-lower")  ?? [] },
+  { id: "cyrillic-d-lower",  languageId: "lang-ru", courseId: "course-ru-char-8", label: "д", audioText: "д", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-d-lower")  ?? 1, courseLevel: 8, meanings: ["consonne d"],  romaji: ["d"],  svgPaths: cursiveLowerPathMap.get("cyrillic-d-lower")  ?? [] },
+  { id: "cyrillic-z-lower",  languageId: "lang-ru", courseId: "course-ru-char-8", label: "з", audioText: "з", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-z-lower")  ?? 1, courseLevel: 8, meanings: ["consonne z"],  romaji: ["z"],  svgPaths: cursiveLowerPathMap.get("cyrillic-z-lower")  ?? [] },
+  { id: "cyrillic-j-lower",  languageId: "lang-ru", courseId: "course-ru-char-8", label: "й", audioText: "й", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-j-lower")  ?? 3, courseLevel: 8, meanings: ["consonne y"],  romaji: ["y"],  svgPaths: cursiveLowerPathMap.get("cyrillic-j-lower")  ?? [] },
+  { id: "cyrillic-f-lower",  languageId: "lang-ru", courseId: "course-ru-char-8", label: "ф", audioText: "ф", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-f-lower")  ?? 2, courseLevel: 8, meanings: ["consonne f"],  romaji: ["f"],  svgPaths: cursiveLowerPathMap.get("cyrillic-f-lower")  ?? [] },
+  { id: "cyrillic-kh-lower", languageId: "lang-ru", courseId: "course-ru-char-8", label: "х", audioText: "х", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-kh-lower") ?? 2, courseLevel: 8, meanings: ["consonne kh"], romaji: ["kh"], svgPaths: cursiveLowerPathMap.get("cyrillic-kh-lower") ?? [] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE MINUSCULES — Cours 9 : Consonnes III ж ц ч ш
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-zh-lower",   languageId: "lang-ru", courseId: "course-ru-char-9", label: "ж", audioText: "ж", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-zh-lower")   ?? 3, courseLevel: 9, meanings: ["consonne zh"],  romaji: ["zh"],  svgPaths: cursiveLowerPathMap.get("cyrillic-zh-lower")   ?? [] },
+  { id: "cyrillic-ts-lower",   languageId: "lang-ru", courseId: "course-ru-char-9", label: "ц", audioText: "ц", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-ts-lower")   ?? 2, courseLevel: 9, meanings: ["consonne ts"],  romaji: ["ts"],  svgPaths: cursiveLowerPathMap.get("cyrillic-ts-lower")   ?? [] },
+  { id: "cyrillic-ch-lower",   languageId: "lang-ru", courseId: "course-ru-char-9", label: "ч", audioText: "ч", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-ch-lower")   ?? 2, courseLevel: 9, meanings: ["consonne tch"], romaji: ["tch"], svgPaths: cursiveLowerPathMap.get("cyrillic-ch-lower")   ?? [] },
+  { id: "cyrillic-sh-lower",   languageId: "lang-ru", courseId: "course-ru-char-9", label: "ш", audioText: "ш", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-sh-lower")   ?? 1, courseLevel: 9, meanings: ["consonne ch"],  romaji: ["ch"],  svgPaths: cursiveLowerPathMap.get("cyrillic-sh-lower")   ?? [] },
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CYRILLIQUE MINUSCULES — Cours 10 : Signes spéciaux щ ъ ы ь ё
+  // ════════════════════════════════════════════════════════════════════════════
+
+  { id: "cyrillic-shch-lower",      languageId: "lang-ru", courseId: "course-ru-char-10", label: "щ", audioText: "щ", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-shch-lower")      ?? 1, courseLevel: 10, meanings: ["consonne chtch"], romaji: ["chtch"], svgPaths: cursiveLowerPathMap.get("cyrillic-shch-lower")      ?? [] },
+  { id: "cyrillic-hard-sign-lower",  languageId: "lang-ru", courseId: "course-ru-char-10", label: "ъ", audioText: "ъ", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-hard-sign-lower")  ?? 2, courseLevel: 10, meanings: ["signe dur"],     romaji: ["ʺ"],     svgPaths: cursiveLowerPathMap.get("cyrillic-hard-sign-lower")  ?? [] },
+  { id: "cyrillic-yeru-lower",       languageId: "lang-ru", courseId: "course-ru-char-10", label: "ы", audioText: "ы", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-yeru-lower")       ?? 3, courseLevel: 10, meanings: ["voyelle y"],     romaji: ["y"],     svgPaths: cursiveLowerPathMap.get("cyrillic-yeru-lower")       ?? [] },
+  { id: "cyrillic-soft-sign-lower",  languageId: "lang-ru", courseId: "course-ru-char-10", label: "ь", audioText: "ь", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-soft-sign-lower")  ?? 2, courseLevel: 10, meanings: ["signe mou"],     romaji: ["ʹ"],     svgPaths: cursiveLowerPathMap.get("cyrillic-soft-sign-lower")  ?? [] },
+  { id: "cyrillic-yo-lower",         languageId: "lang-ru", courseId: "course-ru-char-10", label: "ё", audioText: "ё", strokeCount: cursiveLowerStrokeCountMap.get("cyrillic-yo-lower")         ?? 4, courseLevel: 10, meanings: ["voyelle yo"],    romaji: ["yo"],    svgPaths: cursiveLowerPathMap.get("cyrillic-yo-lower")         ?? [] },
 ];
 
 // ─── Mots ─────────────────────────────────────────────────────────────────────
 
-type WordSeed = { id: string; languageId: string; courseId: string; text: string; reading?: string; meaning: string; audioText?: string; courseLevel: number };
+type WordSeed = {
+  id: string; languageId: string; courseId: string;
+  text: string; kana?: string; reading?: string;
+  meaning: string; audioText?: string; courseLevel: number;
+  etymology?: string; components?: string;
+};
 
 const WORDS: WordSeed[] = [
-  // ── Japonais — Cours 1 : Nature & objets ──────────────────────────────────
-  { id: "ja-word-hi",    languageId: "lang-ja", courseId: "course-ja-word-1", text: "ひ",    reading: "hi",    meaning: "feu / soleil",   audioText: "ひ",    courseLevel: 1 },
-  { id: "ja-word-ki",    languageId: "lang-ja", courseId: "course-ja-word-1", text: "き",    reading: "ki",    meaning: "arbre",           audioText: "き",    courseLevel: 1 },
-  { id: "ja-word-mizu",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "みず",  reading: "mizu",  meaning: "eau",             audioText: "みず",  courseLevel: 1 },
-  { id: "ja-word-yama",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "やま",  reading: "yama",  meaning: "montagne",        audioText: "やま",  courseLevel: 1 },
-  { id: "ja-word-kawa",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "かわ",  reading: "kawa",  meaning: "rivière",         audioText: "かわ",  courseLevel: 1 },
-  { id: "ja-word-hana",  languageId: "lang-ja", courseId: "course-ja-word-1", text: "はな",  reading: "hana",  meaning: "fleur",           audioText: "はな",  courseLevel: 1 },
-  { id: "ja-word-tsuki", languageId: "lang-ja", courseId: "course-ja-word-1", text: "つき",  reading: "tsuki", meaning: "lune",            audioText: "つき",  courseLevel: 1 },
-  { id: "ja-word-hoshi", languageId: "lang-ja", courseId: "course-ja-word-1", text: "ほし",  reading: "hoshi", meaning: "étoile",          audioText: "ほし",  courseLevel: 1 },
-  { id: "ja-word-umi",   languageId: "lang-ja", courseId: "course-ja-word-1", text: "うみ",  reading: "umi",   meaning: "mer",             audioText: "うみ",  courseLevel: 1 },
-  { id: "ja-word-ame",   languageId: "lang-ja", courseId: "course-ja-word-1", text: "あめ",  reading: "ame",   meaning: "pluie",           audioText: "あめ",  courseLevel: 1 },
+  // ── Japonais — Cours 1 : Nature & éléments (kanji) ───────────────────────
+  {
+    id: "ja-word-mizu", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "水", kana: "みず", reading: "mizu", meaning: "eau", audioText: "みず", courseLevel: 1,
+    etymology: "Pictogramme de l'eau qui s'écoule entre des rochers — trois courants ondulés.",
+    components: JSON.stringify([{ char: "水", meaning: "eau (radical 氵 en composition)" }]),
+  },
+  {
+    id: "ja-word-yama", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "山", kana: "やま", reading: "yama", meaning: "montagne", audioText: "やま", courseLevel: 1,
+    etymology: "Trois pics montagneux vus de face, le central plus haut.",
+    components: JSON.stringify([{ char: "山", meaning: "montagne (radical)" }]),
+  },
+  {
+    id: "ja-word-kawa", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "川", kana: "かわ", reading: "kawa", meaning: "rivière", audioText: "かわ", courseLevel: 1,
+    etymology: "Trois courants parallèles qui représentent l'eau qui coule.",
+    components: JSON.stringify([{ char: "川", meaning: "rivière (radical)" }]),
+  },
+  {
+    id: "ja-word-hana", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "花", kana: "はな", reading: "hana", meaning: "fleur", audioText: "はな", courseLevel: 1,
+    etymology: "艹 (herbe) + 化 (transformation) — la plante qui se transforme en beauté.",
+    components: JSON.stringify([{ char: "艹", meaning: "herbe (radical)" }, { char: "化", meaning: "transformation" }]),
+  },
+  {
+    id: "ja-word-tsuki", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "月", kana: "つき", reading: "tsuki", meaning: "lune / mois", audioText: "つき", courseLevel: 1,
+    etymology: "Représente le croissant de lune. Sert aussi à compter les mois.",
+    components: JSON.stringify([{ char: "月", meaning: "lune / mois (radical)" }]),
+  },
+  {
+    id: "ja-word-hoshi", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "星", kana: "ほし", reading: "hoshi", meaning: "étoile", audioText: "ほし", courseLevel: 1,
+    etymology: "日 (soleil / lumière) + 生 (naître) — corps céleste qui émet de la lumière.",
+    components: JSON.stringify([{ char: "日", meaning: "soleil / lumière" }, { char: "生", meaning: "naître / vivre" }]),
+  },
+  {
+    id: "ja-word-umi", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "海", kana: "うみ", reading: "umi", meaning: "mer", audioText: "うみ", courseLevel: 1,
+    etymology: "氵(eau) + 母 (mère) — les eaux de la mère, source originelle de la vie.",
+    components: JSON.stringify([{ char: "氵", meaning: "eau (radical)" }, { char: "母", meaning: "mère" }]),
+  },
+  {
+    id: "ja-word-ame", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "雨", kana: "あめ", reading: "ame", meaning: "pluie", audioText: "あめ", courseLevel: 1,
+    etymology: "Un nuage (上) d'où tombent des gouttes d'eau (les traits intérieurs). Radical météo.",
+    components: JSON.stringify([{ char: "雨", meaning: "pluie (radical météo — 雪 neige, 雷 tonnerre)" }]),
+  },
+  {
+    id: "ja-word-hi", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "火", kana: "ひ", reading: "hi", meaning: "feu", audioText: "ひ", courseLevel: 1,
+    etymology: "Deux flammes qui s'élèvent de chaque côté d'un foyer central.",
+    components: JSON.stringify([{ char: "火", meaning: "feu (radical 灬 en bas de composition)" }]),
+  },
+  {
+    id: "ja-word-ki", languageId: "lang-ja", courseId: "course-ja-word-1",
+    text: "木", kana: "き", reading: "ki", meaning: "arbre / bois", audioText: "き", courseLevel: 1,
+    etymology: "Tronc vertical avec branches en haut et racines en bas — l'arbre dans sa totalité.",
+    components: JSON.stringify([{ char: "木", meaning: "arbre / bois (radical)" }]),
+  },
 
-  // ── Japonais — Cours 2 : Animaux & couleurs ───────────────────────────────
-  { id: "ja-word-inu",   languageId: "lang-ja", courseId: "course-ja-word-2", text: "いぬ",  reading: "inu",   meaning: "chien",           audioText: "いぬ",  courseLevel: 2 },
-  { id: "ja-word-neko",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "ねこ",  reading: "neko",  meaning: "chat",            audioText: "ねこ",  courseLevel: 2 },
-  { id: "ja-word-tori",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "とり",  reading: "tori",  meaning: "oiseau",          audioText: "とり",  courseLevel: 2 },
-  { id: "ja-word-sakana",languageId: "lang-ja", courseId: "course-ja-word-2", text: "さかな",reading: "sakana",meaning: "poisson",         audioText: "さかな",courseLevel: 2 },
-  { id: "ja-word-ao",    languageId: "lang-ja", courseId: "course-ja-word-2", text: "あお",  reading: "ao",    meaning: "bleu / vert",     audioText: "あお",  courseLevel: 2 },
-  { id: "ja-word-aka",   languageId: "lang-ja", courseId: "course-ja-word-2", text: "あか",  reading: "aka",   meaning: "rouge",           audioText: "あか",  courseLevel: 2 },
-  { id: "ja-word-shiro", languageId: "lang-ja", courseId: "course-ja-word-2", text: "しろ",  reading: "shiro", meaning: "blanc",           audioText: "しろ",  courseLevel: 2 },
-  { id: "ja-word-kuro",  languageId: "lang-ja", courseId: "course-ja-word-2", text: "くろ",  reading: "kuro",  meaning: "noir",            audioText: "くろ",  courseLevel: 2 },
+  // ── Japonais — Cours 2 : Animaux & couleurs (kanji) ──────────────────────
+  {
+    id: "ja-word-inu", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "犬", kana: "いぬ", reading: "inu", meaning: "chien", audioText: "いぬ", courseLevel: 2,
+    etymology: "大 (grand / homme debout) avec un petit trait — l'animal compagnon de l'homme.",
+    components: JSON.stringify([{ char: "大", meaning: "grand / homme debout" }, { char: "丶", meaning: "petit trait distinctif" }]),
+  },
+  {
+    id: "ja-word-neko", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "猫", kana: "ねこ", reading: "neko", meaning: "chat", audioText: "ねこ", courseLevel: 2,
+    etymology: "犭 (animal) + 苗 (semis / plant cultivé) — l'animal qui garde les champs des rongeurs.",
+    components: JSON.stringify([{ char: "犭", meaning: "animal (radical)" }, { char: "苗", meaning: "plant, semis" }]),
+  },
+  {
+    id: "ja-word-tori", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "鳥", kana: "とり", reading: "tori", meaning: "oiseau", audioText: "とり", courseLevel: 2,
+    etymology: "Silhouette détaillée d'un oiseau avec tête, corps et longue queue.",
+    components: JSON.stringify([{ char: "鳥", meaning: "oiseau (radical)" }]),
+  },
+  {
+    id: "ja-word-sakana", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "魚", kana: "さかな", reading: "sakana", meaning: "poisson", audioText: "さかな", courseLevel: 2,
+    etymology: "Silhouette d'un poisson vue de côté : tête, corps, et queue en 灬.",
+    components: JSON.stringify([{ char: "魚", meaning: "poisson (radical)" }]),
+  },
+  {
+    id: "ja-word-ao", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "青", kana: "あお", reading: "ao", meaning: "bleu / vert", audioText: "あお", courseLevel: 2,
+    etymology: "生 (pousser / vivre) + 井 (puits) — la couleur de la végétation fraîche au bord de l'eau.",
+    components: JSON.stringify([{ char: "生", meaning: "pousser / vivre" }, { char: "井", meaning: "puits / source" }]),
+  },
+  {
+    id: "ja-word-aka", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "赤", kana: "あか", reading: "aka", meaning: "rouge", audioText: "あか", courseLevel: 2,
+    etymology: "大 (personne) + 火 (feu) — la couleur du feu et du sang.",
+    components: JSON.stringify([{ char: "大", meaning: "personne / grand" }, { char: "火", meaning: "feu" }]),
+  },
+  {
+    id: "ja-word-shiro", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "白", kana: "しろ", reading: "shiro", meaning: "blanc", audioText: "しろ", courseLevel: 2,
+    etymology: "日 (soleil) avec une marque lumineuse en haut — la pureté de la première lumière du jour.",
+    components: JSON.stringify([{ char: "日", meaning: "soleil" }, { char: "丿", meaning: "rayon de lumière" }]),
+  },
+  {
+    id: "ja-word-kuro", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "黒", kana: "くろ", reading: "kuro", meaning: "noir", audioText: "くろ", courseLevel: 2,
+    etymology: "里 (village / champ) + 炎 (flammes) → suie de fumée, couleur de la nuit.",
+    components: JSON.stringify([{ char: "里", meaning: "village / champ" }, { char: "灬", meaning: "flammes (bas)" }]),
+  },
+  {
+    id: "ja-word-sora", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "空", kana: "そら", reading: "sora", meaning: "ciel / vide", audioText: "そら", courseLevel: 2,
+    etymology: "穴 (grotte / vide) + 工 (travail / structure) — l'espace vide et infini au-dessus de nous.",
+    components: JSON.stringify([{ char: "穴", meaning: "trou / vide" }, { char: "工", meaning: "structure / travail" }]),
+  },
+  {
+    id: "ja-word-kaze", languageId: "lang-ja", courseId: "course-ja-word-2",
+    text: "風", kana: "かぜ", reading: "kaze", meaning: "vent", audioText: "かぜ", courseLevel: 2,
+    etymology: "凡 (voile de bateau) dans une enveloppe — la force naturelle invisible qui gonfle les voiles.",
+    components: JSON.stringify([{ char: "几", meaning: "enveloppe / contenant" }, { char: "虫", meaning: "insecte (phonétique)" }]),
+  },
 
-  // ── Russe — Cours 1 : Famille & vie quotidienne ───────────────────────────
-  { id: "ru-word-mama",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "мама",  reading: "mama",  meaning: "maman",           audioText: "мама",  courseLevel: 1 },
-  { id: "ru-word-papa",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "папа",  reading: "papa",  meaning: "papa",            audioText: "папа",  courseLevel: 1 },
-  { id: "ru-word-dom",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "дом",   reading: "dom",   meaning: "maison",          audioText: "дом",   courseLevel: 1 },
-  { id: "ru-word-da",    languageId: "lang-ru", courseId: "course-ru-word-1", text: "да",    reading: "da",    meaning: "oui",             audioText: "да",    courseLevel: 1 },
-  { id: "ru-word-nyet",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "нет",   reading: "nyet",  meaning: "non",             audioText: "нет",   courseLevel: 1 },
-  { id: "ru-word-drug",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "друг",  reading: "drug",  meaning: "ami",             audioText: "друг",  courseLevel: 1 },
-  { id: "ru-word-mir",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "мир",   reading: "mir",   meaning: "monde / paix",    audioText: "мир",   courseLevel: 1 },
-  { id: "ru-word-kot",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "кот",   reading: "kot",   meaning: "chat (mâle)",     audioText: "кот",   courseLevel: 1 },
+  // ── Russe — Cours 1 : Famille (MAJUSCULES) ───────────────────────────────
+  { id: "ru-word-mama",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "МАМА",  reading: "mama",  meaning: "maman",        audioText: "мама",  courseLevel: 1 },
+  { id: "ru-word-papa",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "ПАПА",  reading: "papa",  meaning: "papa",         audioText: "папа",  courseLevel: 1 },
+  { id: "ru-word-dom",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "ДОМ",   reading: "dom",   meaning: "maison",       audioText: "дом",   courseLevel: 1 },
+  { id: "ru-word-da",    languageId: "lang-ru", courseId: "course-ru-word-1", text: "ДА",    reading: "da",    meaning: "oui",          audioText: "да",    courseLevel: 1 },
+  { id: "ru-word-nyet",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "НЕТ",   reading: "nyet",  meaning: "non",          audioText: "нет",   courseLevel: 1 },
+  { id: "ru-word-drug",  languageId: "lang-ru", courseId: "course-ru-word-1", text: "ДРУГ",  reading: "drug",  meaning: "ami",          audioText: "друг",  courseLevel: 1 },
+  { id: "ru-word-mir",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "МИР",   reading: "mir",   meaning: "monde / paix", audioText: "мир",   courseLevel: 1 },
+  { id: "ru-word-kot",   languageId: "lang-ru", courseId: "course-ru-word-1", text: "КОТ",   reading: "kot",   meaning: "chat (mâle)",  audioText: "кот",   courseLevel: 1 },
 
-  // ── Russe — Cours 2 : Nature & nourriture ─────────────────────────────────
-  { id: "ru-word-voda",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "вода",  reading: "voda",  meaning: "eau",             audioText: "вода",  courseLevel: 2 },
-  { id: "ru-word-khleb", languageId: "lang-ru", courseId: "course-ru-word-2", text: "хлеб",  reading: "khleb", meaning: "pain",            audioText: "хлеб",  courseLevel: 2 },
-  { id: "ru-word-les",   languageId: "lang-ru", courseId: "course-ru-word-2", text: "лес",   reading: "les",   meaning: "forêt",           audioText: "лес",   courseLevel: 2 },
-  { id: "ru-word-more",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "море",  reading: "morye", meaning: "mer",             audioText: "море",  courseLevel: 2 },
-  { id: "ru-word-gora",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "гора",  reading: "gora",  meaning: "montagne",        audioText: "гора",  courseLevel: 2 },
-  { id: "ru-word-reka",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "река",  reading: "reka",  meaning: "rivière",         audioText: "река",  courseLevel: 2 },
-  { id: "ru-word-ryba",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "рыба",  reading: "ryba",  meaning: "poisson",         audioText: "рыба",  courseLevel: 2 },
-  { id: "ru-word-moloko",languageId: "lang-ru", courseId: "course-ru-word-2", text: "молоко",reading: "moloko",meaning: "lait",            audioText: "молоко",courseLevel: 2 },
+  // ── Russe — Cours 2 : Nature (MAJUSCULES) ─────────────────────────────────
+  { id: "ru-word-voda",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "ВОДА",  reading: "voda",  meaning: "eau",          audioText: "вода",  courseLevel: 2 },
+  { id: "ru-word-khleb", languageId: "lang-ru", courseId: "course-ru-word-2", text: "ХЛЕБ",  reading: "khleb", meaning: "pain",         audioText: "хлеб",  courseLevel: 2 },
+  { id: "ru-word-les",   languageId: "lang-ru", courseId: "course-ru-word-2", text: "ЛЕС",   reading: "les",   meaning: "forêt",        audioText: "лес",   courseLevel: 2 },
+  { id: "ru-word-more",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "МОРЕ",  reading: "morye", meaning: "mer",          audioText: "море",  courseLevel: 2 },
+  { id: "ru-word-gora",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "ГОРА",  reading: "gora",  meaning: "montagne",     audioText: "гора",  courseLevel: 2 },
+  { id: "ru-word-reka",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "РЕКА",  reading: "reka",  meaning: "rivière",      audioText: "река",  courseLevel: 2 },
+  { id: "ru-word-ryba",  languageId: "lang-ru", courseId: "course-ru-word-2", text: "РЫБА",  reading: "ryba",  meaning: "poisson",      audioText: "рыба",  courseLevel: 2 },
+  { id: "ru-word-moloko",languageId: "lang-ru", courseId: "course-ru-word-2", text: "МОЛОКО",reading: "moloko",meaning: "lait",         audioText: "молоко",courseLevel: 2 },
+
+  // ── Russe — Cours 3 : Famille (minuscules) ────────────────────────────────
+  { id: "ru-word-mama-l",  languageId: "lang-ru", courseId: "course-ru-word-3", text: "мама",  reading: "mama",  meaning: "maman",        audioText: "мама",  courseLevel: 3 },
+  { id: "ru-word-papa-l",  languageId: "lang-ru", courseId: "course-ru-word-3", text: "папа",  reading: "papa",  meaning: "papa",         audioText: "папа",  courseLevel: 3 },
+  { id: "ru-word-dom-l",   languageId: "lang-ru", courseId: "course-ru-word-3", text: "дом",   reading: "dom",   meaning: "maison",       audioText: "дом",   courseLevel: 3 },
+  { id: "ru-word-da-l",    languageId: "lang-ru", courseId: "course-ru-word-3", text: "да",    reading: "da",    meaning: "oui",          audioText: "да",    courseLevel: 3 },
+  { id: "ru-word-nyet-l",  languageId: "lang-ru", courseId: "course-ru-word-3", text: "нет",   reading: "nyet",  meaning: "non",          audioText: "нет",   courseLevel: 3 },
+  { id: "ru-word-drug-l",  languageId: "lang-ru", courseId: "course-ru-word-3", text: "друг",  reading: "drug",  meaning: "ami",          audioText: "друг",  courseLevel: 3 },
+  { id: "ru-word-mir-l",   languageId: "lang-ru", courseId: "course-ru-word-3", text: "мир",   reading: "mir",   meaning: "monde / paix", audioText: "мир",   courseLevel: 3 },
+  { id: "ru-word-kot-l",   languageId: "lang-ru", courseId: "course-ru-word-3", text: "кот",   reading: "kot",   meaning: "chat (mâle)",  audioText: "кот",   courseLevel: 3 },
+
+  // ── Russe — Cours 4 : Nature (minuscules) ─────────────────────────────────
+  { id: "ru-word-voda-l",  languageId: "lang-ru", courseId: "course-ru-word-4", text: "вода",  reading: "voda",  meaning: "eau",          audioText: "вода",  courseLevel: 4 },
+  { id: "ru-word-khleb-l", languageId: "lang-ru", courseId: "course-ru-word-4", text: "хлеб",  reading: "khleb", meaning: "pain",         audioText: "хлеб",  courseLevel: 4 },
+  { id: "ru-word-les-l",   languageId: "lang-ru", courseId: "course-ru-word-4", text: "лес",   reading: "les",   meaning: "forêt",        audioText: "лес",   courseLevel: 4 },
+  { id: "ru-word-more-l",  languageId: "lang-ru", courseId: "course-ru-word-4", text: "море",  reading: "morye", meaning: "mer",          audioText: "море",  courseLevel: 4 },
+  { id: "ru-word-gora-l",  languageId: "lang-ru", courseId: "course-ru-word-4", text: "гора",  reading: "gora",  meaning: "montagne",     audioText: "гора",  courseLevel: 4 },
+  { id: "ru-word-reka-l",  languageId: "lang-ru", courseId: "course-ru-word-4", text: "река",  reading: "reka",  meaning: "rivière",      audioText: "река",  courseLevel: 4 },
+  { id: "ru-word-ryba-l",  languageId: "lang-ru", courseId: "course-ru-word-4", text: "рыба",  reading: "ryba",  meaning: "poisson",      audioText: "рыба",  courseLevel: 4 },
+  { id: "ru-word-moloko-l",languageId: "lang-ru", courseId: "course-ru-word-4", text: "молоко",reading: "moloko",meaning: "lait",         audioText: "молоко",courseLevel: 4 },
+];
+
+// ─── Phrases ──────────────────────────────────────────────────────────────────
+
+type PhraseSeed = { id: string; languageId: string; courseId: string; text: string; reading?: string; translation: string; audioText?: string; courseLevel: number };
+
+const PHRASES: PhraseSeed[] = [
+  // ── Japonais — Cours 1 : Salutations ──────────────────────────────────────
+  { id: "ja-phrase-ohayou",    languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "おはようございます",      reading: "Ohayou gozaimasu",     translation: "Bonjour (le matin)",          audioText: "おはようございます",     courseLevel: 1 },
+  { id: "ja-phrase-konnichiwa",languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "こんにちは",              reading: "Konnichiwa",            translation: "Bonjour (l'après-midi)",      audioText: "こんにちは",             courseLevel: 1 },
+  { id: "ja-phrase-konbanwa",  languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "こんばんは",              reading: "Konbanwa",              translation: "Bonsoir",                     audioText: "こんばんは",             courseLevel: 1 },
+  { id: "ja-phrase-arigatou",  languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "ありがとうございます",     reading: "Arigatou gozaimasu",   translation: "Merci beaucoup",              audioText: "ありがとうございます",   courseLevel: 1 },
+  { id: "ja-phrase-sumimasen", languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "すみません",              reading: "Sumimasen",             translation: "Excusez-moi",                 audioText: "すみません",             courseLevel: 1 },
+  { id: "ja-phrase-hai",       languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "はい",                    reading: "Hai",                   translation: "Oui",                         audioText: "はい",                   courseLevel: 1 },
+  { id: "ja-phrase-iie",       languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "いいえ",                  reading: "Iie",                   translation: "Non",                         audioText: "いいえ",                 courseLevel: 1 },
+  { id: "ja-phrase-douzo",     languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "どうぞ",                  reading: "Douzo",                 translation: "Je vous en prie / Voilà",     audioText: "どうぞ",                 courseLevel: 1 },
+  { id: "ja-phrase-gomennasai",languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "ごめんなさい",             reading: "Gomennasai",            translation: "Pardon / Désolé(e)",          audioText: "ごめんなさい",           courseLevel: 1 },
+  { id: "ja-phrase-sayounara", languageId: "lang-ja", courseId: "course-ja-phrase-1", text: "さようなら",              reading: "Sayounara",             translation: "Au revoir",                   audioText: "さようなら",             courseLevel: 1 },
+
+  // ── Japonais — Cours 2 : Présentation ────────────────────────────────────
+  { id: "ja-phrase-ogenki",    languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "おげんきですか？",         reading: "Ogenki desu ka?",       translation: "Comment allez-vous ?",        audioText: "おげんきですか",         courseLevel: 2 },
+  { id: "ja-phrase-genki",     languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "はい、げんきです",         reading: "Hai, genki desu",       translation: "Oui, je vais bien",           audioText: "はい、げんきです",       courseLevel: 2 },
+  { id: "ja-phrase-namae",     languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "おなまえは？",             reading: "Onamae wa?",            translation: "Quel est votre nom ?",        audioText: "おなまえは",             courseLevel: 2 },
+  { id: "ja-phrase-watashi",   languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "わたしは がくせい です",   reading: "Watashi wa gakusei desu",translation: "Je suis étudiant(e)",        audioText: "わたしは がくせい です", courseLevel: 2 },
+  { id: "ja-phrase-wakarimasu",languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "わかります",              reading: "Wakarimasu",            translation: "Je comprends",                audioText: "わかります",             courseLevel: 2 },
+  { id: "ja-phrase-wakarimasen",languageId: "lang-ja",courseId: "course-ja-phrase-2", text: "わかりません",             reading: "Wakarimasen",           translation: "Je ne comprends pas",         audioText: "わかりません",           courseLevel: 2 },
+  { id: "ja-phrase-nihongo",   languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "にほんごを べんきょう します", reading: "Nihongo wo benkyou shimasu", translation: "J'étudie le japonais",  audioText: "にほんごを べんきょう します", courseLevel: 2 },
+  { id: "ja-phrase-dokoから",  languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "どこから きましたか？",    reading: "Doko kara kimashita ka?", translation: "D'où venez-vous ?",          audioText: "どこから きましたか",    courseLevel: 2 },
+  { id: "ja-phrase-mou-ichido",languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "もう いちど おねがいします", reading: "Mou ichido onegaishimasu", translation: "Une fois de plus, s'il vous plaît", audioText: "もう いちど おねがいします", courseLevel: 2 },
+  { id: "ja-phrase-tasukete",  languageId: "lang-ja", courseId: "course-ja-phrase-2", text: "たすけてください！",       reading: "Tasukete kudasai!",     translation: "Au secours !",                audioText: "たすけてください",       courseLevel: 2 },
+
+  // ── Russe — Cours 1 : Salutations ─────────────────────────────────────────
+  { id: "ru-phrase-privet",    languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Привет!",                  reading: "Privet!",               translation: "Salut !",                     audioText: "Привет",                 courseLevel: 1 },
+  { id: "ru-phrase-zdravstvuy",languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Здравствуйте!",            reading: "Zdravstvuyte!",         translation: "Bonjour ! (formel)",          audioText: "Здравствуйте",           courseLevel: 1 },
+  { id: "ru-phrase-dobroe",    languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Доброе утро!",             reading: "Dobroye utro!",         translation: "Bonjour (le matin) !",        audioText: "Доброе утро",            courseLevel: 1 },
+  { id: "ru-phrase-dobryj",    languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Добрый день!",             reading: "Dobryy den'!",          translation: "Bonjour (l'après-midi) !",    audioText: "Добрый день",            courseLevel: 1 },
+  { id: "ru-phrase-dobryy-vech",languageId:"lang-ru", courseId: "course-ru-phrase-1", text: "Добрый вечер!",            reading: "Dobryy vecher!",        translation: "Bonsoir !",                   audioText: "Добрый вечер",           courseLevel: 1 },
+  { id: "ru-phrase-spasibo",   languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Спасибо!",                 reading: "Spasibo!",              translation: "Merci !",                     audioText: "Спасибо",                courseLevel: 1 },
+  { id: "ru-phrase-pozhaluysta",languageId:"lang-ru", courseId: "course-ru-phrase-1", text: "Пожалуйста!",              reading: "Pozhaluysta!",          translation: "S'il vous plaît / De rien !", audioText: "Пожалуйста",             courseLevel: 1 },
+  { id: "ru-phrase-izvinite",  languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Извините!",                reading: "Izvinite!",             translation: "Excusez-moi !",               audioText: "Извините",               courseLevel: 1 },
+  { id: "ru-phrase-do-svidania",languageId:"lang-ru", courseId: "course-ru-phrase-1", text: "До свидания!",             reading: "Do svidaniya!",         translation: "Au revoir !",                 audioText: "До свидания",            courseLevel: 1 },
+  { id: "ru-phrase-khorosho",  languageId: "lang-ru", courseId: "course-ru-phrase-1", text: "Хорошо!",                  reading: "Khorosho!",             translation: "Bien ! / D'accord !",         audioText: "Хорошо",                 courseLevel: 1 },
+
+  // ── Russe — Cours 2 : Présentation ───────────────────────────────────────
+  { id: "ru-phrase-kak-dela",  languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Как дела?",                reading: "Kak dela?",             translation: "Comment vas-tu ?",            audioText: "Как дела",               courseLevel: 2 },
+  { id: "ru-phrase-vsyo-khor", languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Всё хорошо, спасибо!",     reading: "Vsyo khorosho, spasibo!", translation: "Tout va bien, merci !",     audioText: "Всё хорошо, спасибо",    courseLevel: 2 },
+  { id: "ru-phrase-menya-zovut",languageId:"lang-ru", courseId: "course-ru-phrase-2", text: "Меня зовут...",            reading: "Menya zovut...",        translation: "Je m'appelle...",             audioText: "Меня зовут",             courseLevel: 2 },
+  { id: "ru-phrase-otkuda",    languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Откуда вы?",               reading: "Otkuda vy?",            translation: "D'où venez-vous ?",           audioText: "Откуда вы",              courseLevel: 2 },
+  { id: "ru-phrase-ya-ne-pon", languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Я не понимаю",             reading: "Ya ne ponimayu",        translation: "Je ne comprends pas",         audioText: "Я не понимаю",           courseLevel: 2 },
+  { id: "ru-phrase-povtorite", languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Повторите, пожалуйста",    reading: "Povtorite, pozhaluysta", translation: "Répétez s'il vous plaît",    audioText: "Повторите пожалуйста",   courseLevel: 2 },
+  { id: "ru-phrase-gde-tualet",languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Где туалет?",              reading: "Gde tualet?",           translation: "Où sont les toilettes ?",     audioText: "Где туалет",             courseLevel: 2 },
+  { id: "ru-phrase-skolko",    languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Сколько стоит?",           reading: "Skolko stoit?",         translation: "Combien ça coûte ?",          audioText: "Сколько стоит",          courseLevel: 2 },
+  { id: "ru-phrase-ya-lyublyu",languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Я люблю тебя",             reading: "Ya lyublyu tebya",      translation: "Je t'aime",                   audioText: "Я люблю тебя",           courseLevel: 2 },
+  { id: "ru-phrase-pomogite",  languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Помогите!",                reading: "Pomogite!",             translation: "Aidez-moi !",                 audioText: "Помогите",               courseLevel: 2 },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -673,7 +943,7 @@ async function seedCourses() {
   for (const course of COURSES) {
     await db.course.upsert({
       where:  { id: course.id },
-      update: { title: course.title, description: course.description, type: course.type },
+      update: { title: course.title, description: course.description, type: course.type, prerequisiteId: course.prerequisiteId ?? null },
       create: course,
     });
     log(`✓ ${course.title}`);
@@ -709,10 +979,22 @@ async function seedWords() {
   for (const word of WORDS) {
     await db.word.upsert({
       where:  { id: word.id },
-      update: { text: word.text, reading: word.reading ?? null, meaning: word.meaning },
+      update: { text: word.text, kana: word.kana ?? null, reading: word.reading ?? null, meaning: word.meaning, etymology: word.etymology ?? null, components: word.components ?? null },
       create: word,
     });
     log(`✓ ${word.text}  (${word.meaning})`);
+  }
+}
+
+async function seedPhrases() {
+  process.stdout.write("\n💬 Phrases...\n");
+  for (const phrase of PHRASES) {
+    await db.phrase.upsert({
+      where:  { id: phrase.id },
+      update: { text: phrase.text, reading: phrase.reading ?? null, translation: phrase.translation },
+      create: phrase,
+    });
+    log(`✓ ${phrase.text}  (${phrase.translation})`);
   }
 }
 
@@ -722,8 +1004,9 @@ async function main() {
   await seedCourses();
   await seedCharacters();
   await seedWords();
+  await seedPhrases();
   process.stdout.write(
-    `\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length} courses, ${CHARACTERS.length} characters, ${WORDS.length} words.\n\n`,
+    `\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length} courses, ${CHARACTERS.length} characters, ${WORDS.length} words, ${PHRASES.length} phrases.\n\n`,
   );
 }
 
