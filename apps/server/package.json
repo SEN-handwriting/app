@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
     "start": "bun ./src/index.ts",
-    "build": "cd ../../packages/database && bunx prisma generate",
+    "build": "echo 'Build handled by Railway'",
     "test": "echo 'Add test script here'",
     "lint": "echo 'Add lint script here'"
   },
