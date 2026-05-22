@@ -253,11 +253,11 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       {/* Reset confirmation */}
       {showResetConfirm && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+          className="fixed inset-0 z-[70] bg-black/60 flex items-end justify-center"
           onClick={() => setShowResetConfirm(false)}
         >
           <div
-            className="bg-zinc-900 border border-zinc-700 rounded-t-2xl px-5 pt-5 pb-10 w-full max-w-sm"
+            className="bg-zinc-900 border border-zinc-700 rounded-t-2xl px-5 pt-5 pb-20 w-full max-w-sm"
             onClick={e => e.stopPropagation()}
           >
             <p className="font-semibold text-base mb-1">Retour à l'étape 1 ?</p>
