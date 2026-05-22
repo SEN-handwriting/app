@@ -24,6 +24,8 @@ interface PracticeGridProps {
   character: Character;
   onSuccess?: () => void;
   canvasClassName?: string;
+  /** When true, adapts to fill parent height without scrolling (mobile learn page) */
+  fillHeight?: boolean;
 }
 
 interface ValidationFeedback {
@@ -32,7 +34,7 @@ interface ValidationFeedback {
   feedback: string;
 }
 
-export default function PracticeGrid({ character, onSuccess, canvasClassName }: PracticeGridProps) {
+export default function PracticeGrid({ character, onSuccess, canvasClassName, fillHeight }: PracticeGridProps) {
   const [practiceLevel, setPracticeLevel] = useState(0);
   const [isLoadingLevel, setIsLoadingLevel] = useState(true);
   const [currentStrokes, setCurrentStrokes] = useState<Array<Array<{ x: number; y: number }>>>([]);
@@ -40,6 +42,23 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName }: 
   const [isCorrect, setIsCorrect] = useState(false);
   const [justMastered, setJustMastered] = useState(false);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
+
+  // fillHeight mode: measure canvas area to create a perfectly-sized square wrapper
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
+  const [canvasAreaSize, setCanvasAreaSize] = useState(0);
+  useEffect(() => {
+    if (!fillHeight) return;
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+      const size = Math.min(Math.floor(rect.width), Math.floor(rect.height));
+      if (size > 0) setCanvasAreaSize(size);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fillHeight]);
 
   const gateIndexRef = useRef(0);
   const currentStrokeIdxRef = useRef(0);
@@ -162,20 +181,20 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName }: 
   const isMastered = practiceLevel >= 5;
 
   return (
-    <div className="w-full space-y-3">
+    <div className={fillHeight ? "w-full h-full flex flex-col gap-2" : "w-full space-y-3"}>
       {justMastered && (
-        <div className="px-4 py-3 bg-yellow-950 border border-yellow-500 rounded-xl text-sm text-yellow-200 font-bold">
+        <div className="flex-none px-4 py-3 bg-yellow-950 border border-yellow-500 rounded-xl text-sm text-yellow-200 font-bold">
           🎉 Félicitations ! Vous avez maîtrisé ce caractère !
         </div>
       )}
       {isMastered && !justMastered && (
-        <div className="inline-block px-4 py-2 bg-green-950 border border-green-600 rounded-xl text-sm text-green-300 font-semibold">
+        <div className="flex-none inline-block px-4 py-2 bg-green-950 border border-green-600 rounded-xl text-sm text-green-300 font-semibold">
           ⭐ Maîtrisé — continuez pour renforcer votre mémoire
         </div>
       )}
 
       {/* Level progress bar */}
-      <div className="space-y-1">
+      <div className={cn("space-y-1", fillHeight && "flex-none")}>
         <div className="flex justify-between text-xs text-zinc-400">
           <span>{config.label} — {config.step}</span>
           <span>{Math.min(practiceLevel, 5)}/5</span>
@@ -188,8 +207,8 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName }: 
         </div>
       </div>
 
-      {/* Action buttons — above canvas so always visible without scroll */}
-      <div className="flex gap-3">
+      {/* Action buttons */}
+      <div className={cn("flex gap-3", fillHeight && "flex-none")}>
         <button
           onClick={handleClear}
           className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
@@ -205,59 +224,80 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName }: 
       </div>
 
       {/* Canvas + overlays */}
-      <div className={cn("relative w-full", canvasClassName)}>
-        <DrawCanvas
-          ref={canvasRef}
-          fluid
-          onStrokeComplete={handleStrokeComplete}
-          onStrokeStart={onStrokeStart}
-          onRealtimeFeedback={onRealtimeFeedback}
-          guidePaths={config.guide ? character.svgPaths : undefined}
-          guideMode={config.guide}
-          borderColor={
-            isCorrect
-              ? "#22c55e"
-              : validationFeedback && !validationFeedback.isValid
-                ? "#ef4444"
-                : currentStrokes.length > 0
-                  ? "#3b82f6"
+      {fillHeight ? (
+        // fillHeight: measured area → inner square wrapper → overlays correctly positioned
+        <div ref={canvasAreaRef} className="flex-1 min-h-0 flex items-center justify-center">
+          {canvasAreaSize > 0 && (
+            <div className="relative" style={{ width: canvasAreaSize, height: canvasAreaSize }}>
+              <DrawCanvas
+                ref={canvasRef}
+                fluid
+                onStrokeComplete={handleStrokeComplete}
+                onStrokeStart={onStrokeStart}
+                onRealtimeFeedback={onRealtimeFeedback}
+                guidePaths={config.guide ? character.svgPaths : undefined}
+                guideMode={config.guide}
+                borderColor={
+                  isCorrect ? "#22c55e"
+                  : validationFeedback && !validationFeedback.isValid ? "#ef4444"
+                  : currentStrokes.length > 0 ? "#3b82f6"
                   : "#ddd"
-          }
-        />
-
-        {isCorrect && (
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-green-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none"
-            style={{ animation: "popIn 0.3s ease-out" }}
-          >
-            ✓
-          </div>
-        )}
-
-        {validationFeedback && !validationFeedback.isValid &&
-          currentStrokes.length === character.svgPaths.length && (
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-red-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none"
-            style={{ animation: "popIn 0.3s ease-out" }}
-          >
-            ✗
-          </div>
-        )}
-
-        {currentStrokes.length > 0 && (
-          <div className="absolute bottom-3 right-3 bg-black/80 text-white px-3 py-1.5 rounded-md text-sm font-bold pointer-events-none">
-            {currentStrokes.length}/{character.strokeCount}
-          </div>
-        )}
-      </div>
+                }
+              />
+              {isCorrect && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-green-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none" style={{ animation: "popIn 0.3s ease-out" }}>✓</div>
+              )}
+              {validationFeedback && !validationFeedback.isValid && currentStrokes.length === character.svgPaths.length && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-red-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none" style={{ animation: "popIn 0.3s ease-out" }}>✗</div>
+              )}
+              {currentStrokes.length > 0 && (
+                <div className="absolute bottom-3 right-3 bg-black/80 text-white px-3 py-1.5 rounded-md text-sm font-bold pointer-events-none">
+                  {currentStrokes.length}/{character.strokeCount}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={cn("relative w-full", canvasClassName)}>
+          <DrawCanvas
+            ref={canvasRef}
+            fluid
+            onStrokeComplete={handleStrokeComplete}
+            onStrokeStart={onStrokeStart}
+            onRealtimeFeedback={onRealtimeFeedback}
+            guidePaths={config.guide ? character.svgPaths : undefined}
+            guideMode={config.guide}
+            borderColor={
+              isCorrect ? "#22c55e"
+              : validationFeedback && !validationFeedback.isValid ? "#ef4444"
+              : currentStrokes.length > 0 ? "#3b82f6"
+              : "#ddd"
+            }
+          />
+          {isCorrect && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-green-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none" style={{ animation: "popIn 0.3s ease-out" }}>✓</div>
+          )}
+          {validationFeedback && !validationFeedback.isValid && currentStrokes.length === character.svgPaths.length && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-red-500/95 text-white flex items-center justify-center text-5xl font-bold pointer-events-none" style={{ animation: "popIn 0.3s ease-out" }}>✗</div>
+          )}
+          {currentStrokes.length > 0 && (
+            <div className="absolute bottom-3 right-3 bg-black/80 text-white px-3 py-1.5 rounded-md text-sm font-bold pointer-events-none">
+              {currentStrokes.length}/{character.strokeCount}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Validation feedback */}
       {validationFeedback && currentStrokes.length === character.svgPaths.length && (
-        <div className={`px-4 py-3 rounded-xl border text-sm ${
+        <div className={cn(
+          "px-4 py-3 rounded-xl border text-sm",
+          fillHeight && "flex-none",
           validationFeedback.isValid
             ? "bg-green-950 border-green-700 text-green-300"
-            : "bg-red-950 border-red-700 text-red-300"
-        }`}>
+            : "bg-red-950 border-red-700 text-red-300",
+        )}>
           <p className="font-bold">{validationFeedback.feedback}</p>
           <p className="text-xs mt-1 opacity-70">Score : {Math.round(validationFeedback.score)}/100</p>
         </div>

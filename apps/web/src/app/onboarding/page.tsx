@@ -10,6 +10,7 @@ export default function OnboardingPage() {
   const { active, others, isLoading, saveOnboarding, isSaving } = useUserLanguages();
   const { data: profile } = useProfile();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (!isLoading && active.length > 0) {
@@ -31,8 +32,13 @@ export default function OnboardingPage() {
 
   async function handleSubmit() {
     if (selected.size === 0) return;
-    await saveOnboarding(Array.from(selected));
-    router.replace("/dashboard");
+    setSaveError(null);
+    try {
+      await saveOnboarding(Array.from(selected));
+      router.replace("/dashboard");
+    } catch {
+      setSaveError("Une erreur est survenue. Réessaie.");
+    }
   }
 
   const allLanguages = [...others];
@@ -99,6 +105,9 @@ export default function OnboardingPage() {
 
       {/* CTA sticky */}
       <div className="flex-none fixed bottom-0 left-0 right-0 z-[61] px-6 pb-8 pt-4 bg-gradient-to-t from-black to-transparent">
+        {saveError && (
+          <p className="text-red-400 text-sm text-center mb-3">{saveError}</p>
+        )}
         <button
           onClick={handleSubmit}
           disabled={selected.size === 0 || isSaving}

@@ -13,7 +13,7 @@ export default async function HomePage() {
 
   if (session) {
     const prefCount = await db.userLanguagePreference.count({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, status: "active" },
     });
     if (prefCount === 0) {
       redirect("/onboarding");

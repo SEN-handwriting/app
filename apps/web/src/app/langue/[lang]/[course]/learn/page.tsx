@@ -122,11 +122,11 @@ export default function LearnPage() {
           </div>
         </div>
 
-        {/* Bottom block: writing zone */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        {/* Bottom block: writing zone — no scroll, canvas fills remaining height */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 py-3">
           <PracticeGrid
             character={character}
-            canvasClassName="max-w-[260px] mx-auto"
+            fillHeight
           />
         </div>
       </div>
