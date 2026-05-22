@@ -7,6 +7,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { Navbar } from "#/components/layouts/Navbar";
 import { BottomNav } from "#/components/layouts/BottomNav";
+import { ServiceWorkerRegistrar } from "#/components/ServiceWorkerRegistrar";
 
 const fontSans = Sen({
   weight: ["400", "500", "600", "700", "800"],
@@ -57,6 +58,7 @@ export default function RootLayout({
               <div className="absolute right-0 bottom-0 size-1/2 rounded-full bg-[#0083D4] blur-[100vw]" />
             </div>
 
+            <ServiceWorkerRegistrar />
             <Navbar />
             <div className="pt-16">{children}</div>
             <BottomNav />
