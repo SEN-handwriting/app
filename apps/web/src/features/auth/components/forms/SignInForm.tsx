@@ -14,7 +14,7 @@ import { useSignInForm } from "#auth/hooks/forms/useSignInForm";
 import Link from "next/link";
 
 export function SignInForm() {
-  const { form, signIn } = useSignInForm();
+  const { form, signIn, error, isPending } = useSignInForm();
 
   return (
     <Form {...form}>
@@ -29,7 +29,7 @@ export function SignInForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input {...field} type="email" />
+                <Input {...field} type="email" disabled={isPending} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -41,9 +41,9 @@ export function SignInForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Mot de passe</FormLabel>
               <FormControl>
-                <Input {...field} type="password" />
+                <Input {...field} type="password" disabled={isPending} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -52,12 +52,18 @@ export function SignInForm() {
 
         <div className="flex justify-end">
           <Link className="text-primary-300 underline" href="/">
-            I forgot my password
+            Mot de passe oublié ?
           </Link>
         </div>
 
-        <Button type="submit" className="mt-4 w-full">
-          Sign in
+        {error && (
+          <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className="mt-4 w-full" disabled={isPending}>
+          {isPending ? "Connexion…" : "Se connecter"}
         </Button>
       </form>
     </Form>
