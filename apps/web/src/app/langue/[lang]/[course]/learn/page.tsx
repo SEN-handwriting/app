@@ -95,7 +95,7 @@ export default function LearnPage() {
               ref={mobilePreviewRef}
               character={character}
               showStrokes={showStrokes}
-              size={150}
+              size={110}
               showLabel={false}
             />
           </div>

@@ -192,35 +192,67 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
         </div>
       )}
 
-      {/* Level progress bar */}
-      <div className={cn("space-y-1", fillHeight && "flex-none")}>
-        <div className="flex justify-between text-xs text-zinc-400">
-          <span>{config.label} — {config.step}</span>
-          <span>{Math.min(practiceLevel, 5)}/5</span>
+      {fillHeight ? (
+        /* fillHeight: compact single row — progress bar + buttons side by side */
+        <div className="flex-none flex items-center gap-2">
+          <div className="flex-1 space-y-0.5 min-w-0">
+            <div className="flex justify-between text-xs text-zinc-400">
+              <span className="truncate">{config.step}</span>
+              <span className="ml-1 shrink-0">{Math.min(practiceLevel, 5)}/5</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${isMastered ? "bg-green-500" : "bg-blue-500"}`}
+                style={{ width: `${(Math.min(practiceLevel, 5) / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleClear}
+            className="shrink-0 h-8 px-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold transition-colors"
+          >
+            🗑️
+          </button>
+          <button
+            onClick={() => { setJustMastered(false); handleClear(); }}
+            className="shrink-0 h-8 px-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-xs font-bold transition-colors"
+          >
+            🔄
+          </button>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${isMastered ? "bg-green-500" : "bg-blue-500"}`}
-            style={{ width: `${(Math.min(practiceLevel, 5) / 5) * 100}%` }}
-          />
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Level progress bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-zinc-400">
+              <span>{config.label} — {config.step}</span>
+              <span>{Math.min(practiceLevel, 5)}/5</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${isMastered ? "bg-green-500" : "bg-blue-500"}`}
+                style={{ width: `${(Math.min(practiceLevel, 5) / 5) * 100}%` }}
+              />
+            </div>
+          </div>
 
-      {/* Action buttons */}
-      <div className={cn("flex gap-3", fillHeight && "flex-none")}>
-        <button
-          onClick={handleClear}
-          className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
-        >
-          🗑️ Effacer
-        </button>
-        <button
-          onClick={() => { setJustMastered(false); handleClear(); }}
-          className="flex-1 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-sm font-bold transition-colors"
-        >
-          🔄 Réessayer
-        </button>
-      </div>
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleClear}
+              className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
+            >
+              🗑️ Effacer
+            </button>
+            <button
+              onClick={() => { setJustMastered(false); handleClear(); }}
+              className="flex-1 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-sm font-bold transition-colors"
+            >
+              🔄 Réessayer
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Canvas + overlays */}
       {fillHeight ? (
