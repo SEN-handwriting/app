@@ -8,6 +8,7 @@ import { TooltipProvider } from "@repo/ui/components/tooltip";
 import Script from "next/script";
 import { Navbar } from "#/components/layouts/Navbar";
 import { BottomNav } from "#/components/layouts/BottomNav";
+import { Analytics } from "@vercel/analytics/next";
 
 const fontSans = Sen({
   weight: ["400", "500", "600", "700", "800"],
@@ -70,6 +71,7 @@ export default function RootLayout({
             <BottomNav />
           </ReactQueryProvider>
         </TooltipProvider>
+        <Analytics />
       </body>
     </html>
   );

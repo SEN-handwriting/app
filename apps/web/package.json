@@ -19,6 +19,7 @@
     "@repo/validation": "*",
     "@tanstack/react-query": "^5.90.8",
     "@tanstack/react-query-devtools": "^5.90.2",
+    "@vercel/analytics": "^2.0.1",
     "dayjs": "^1.11.19",
     "hono": "^4.10.5",
     "leaflet": "^1.9.4",
