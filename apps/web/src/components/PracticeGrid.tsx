@@ -47,6 +47,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   const [canvasSize, setCanvasSize] = useState(300);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canvasSizeRef = useRef(300);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
 
@@ -91,6 +92,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       clearTimeout(successTimerRef.current);
       successTimerRef.current = null;
     }
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
     setCurrentStrokes([]);
     setIsCorrect(false);
     setValidationFeedback(null);
@@ -102,6 +107,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
     if (successTimerRef.current) {
       clearTimeout(successTimerRef.current);
       successTimerRef.current = null;
+    }
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
     }
     setIsLoadingLevel(true);
     setCurrentStrokes([]);
@@ -171,6 +180,19 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       setIsCorrect(result.isValid);
       showToast(result.feedback, result.score, result.isValid);
 
+      if (!result.isValid) {
+        if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = setTimeout(() => {
+          clearTimerRef.current = null;
+          canvasRef.current?.clear();
+          setCurrentStrokes([]);
+          setIsCorrect(false);
+          setValidationFeedback(null);
+          gateIndexRef.current = 0;
+          currentStrokeIdxRef.current = 0;
+        }, 1500);
+      }
+
       const apiCall = fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -180,6 +202,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
         .catch(() => null);
 
       if (result.isValid) {
+        if (clearTimerRef.current) { clearTimeout(clearTimerRef.current); clearTimerRef.current = null; }
         const levelAtAttempt = practiceLevelRef.current;
         if (successTimerRef.current) clearTimeout(successTimerRef.current);
         successTimerRef.current = setTimeout(async () => {
@@ -210,6 +233,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       clearTimeout(successTimerRef.current);
       successTimerRef.current = null;
     }
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
     canvasRef.current?.clear();
     setCurrentStrokes([]);
     setIsCorrect(false);
@@ -223,6 +250,11 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       clearTimeout(successTimerRef.current);
       successTimerRef.current = null;
     }
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
+    isRestartModeRef.current = true;
     setPracticeLevel(0);
     setJustMastered(false);
     setCurrentStrokes([]);
@@ -348,12 +380,6 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
             >
               🗑️
             </button>
-            <button
-              onClick={handleClear}
-              className="shrink-0 h-8 px-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-xs font-bold transition-colors"
-            >
-              🔄
-            </button>
           </div>
         ) : (
           <>
@@ -377,13 +403,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
                 onClick={() => setShowResetConfirm(true)}
                 className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors"
               >
-                🗑️ Effacer
-              </button>
-              <button
-                onClick={handleClear}
-                className="flex-1 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 text-white text-sm font-bold transition-colors"
-              >
-                🔄 Réessayer
+                🗑️ Recommencer depuis le début
               </button>
             </div>
           </>
