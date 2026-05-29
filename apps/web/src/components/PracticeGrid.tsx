@@ -44,7 +44,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   const [justMastered, setJustMastered] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [canvasSize, setCanvasSize] = useState(300);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canvasSizeRef = useRef(300);
   const canvasRef = useRef<DrawCanvasHandle | null>(null);
 
   // fillHeight mode: callback ref so we re-observe whenever the div mounts/unmounts
@@ -70,17 +73,36 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   const isRestartModeRef = useRef(false);
 
   useEffect(() => { practiceLevelRef.current = practiceLevel; }, [practiceLevel]);
+  useEffect(() => { canvasSizeRef.current = canvasSize; }, [canvasSize]);
 
+  // Rebuild waypoints whenever canvas size changes (e.g. orientation flip) so coordinates match.
   useEffect(() => {
     const config = LEVEL_CONFIG[Math.min(practiceLevel, LEVEL_CONFIG.length - 1)]!;
     waypointsPerStrokeRef.current = character.svgPaths.map(path =>
-      buildWaypoints(path, config.waypointN, 300),
+      buildWaypoints(path, config.waypointN, canvasSize),
     );
     gateIndexRef.current = 0;
     currentStrokeIdxRef.current = 0;
-  }, [character, practiceLevel]);
+  }, [character, practiceLevel, canvasSize]);
+
+  // When the canvas resizes (orientation change) cancel any in-flight success and reset stroke state.
+  useEffect(() => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+    setCurrentStrokes([]);
+    setIsCorrect(false);
+    setValidationFeedback(null);
+    gateIndexRef.current = 0;
+    currentStrokeIdxRef.current = 0;
+  }, [canvasSize]);
 
   useEffect(() => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
     setIsLoadingLevel(true);
     setCurrentStrokes([]);
     setValidationFeedback(null);
@@ -116,11 +138,12 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   const onRealtimeFeedback = useCallback(
     (point: { x: number; y: number }): "on" | "near" | "off" => {
       const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
+      const scaledTolerance = config.tolerancePx * (canvasSizeRef.current / 300);
       const waypoints = waypointsPerStrokeRef.current[currentStrokeIdxRef.current] ?? [];
-      if (shouldAdvanceGate(point, waypoints, gateIndexRef.current, config.tolerancePx)) {
+      if (shouldAdvanceGate(point, waypoints, gateIndexRef.current, scaledTolerance)) {
         gateIndexRef.current += 1;
       }
-      return getRealtimeStatus(point, waypoints, gateIndexRef.current, config.tolerancePx);
+      return getRealtimeStatus(point, waypoints, gateIndexRef.current, scaledTolerance);
     },
     [],
   );
@@ -133,13 +156,15 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       if (strokes.length !== character.svgPaths.length) return;
 
       const config = LEVEL_CONFIG[Math.min(practiceLevelRef.current, LEVEL_CONFIG.length - 1)]!;
+      const cs = canvasSizeRef.current;
       const result = validateCharacter(strokes, character.svgPaths, {
         debug: process.env.NODE_ENV === "development",
         levelConfig: {
           waypointN: config.waypointN,
-          tolerancePx: config.tolerancePx,
+          tolerancePx: config.tolerancePx * (cs / 300),
           validThreshold: config.validThreshold,
         },
+        canvasSize: cs,
       });
 
       setValidationFeedback({ isValid: result.isValid, score: result.score });
@@ -156,7 +181,9 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
 
       if (result.isValid) {
         const levelAtAttempt = practiceLevelRef.current;
-        setTimeout(async () => {
+        if (successTimerRef.current) clearTimeout(successTimerRef.current);
+        successTimerRef.current = setTimeout(async () => {
+          successTimerRef.current = null;
           const data = await apiCall;
           const nextLevel = isRestartModeRef.current
             ? Math.min(LEVEL_CONFIG.length - 1, levelAtAttempt + 1)
@@ -179,6 +206,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   );
 
   const handleClear = useCallback(() => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
     canvasRef.current?.clear();
     setCurrentStrokes([]);
     setIsCorrect(false);
@@ -188,6 +219,10 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
   }, []);
 
   const handleReset = useCallback(() => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
     setPracticeLevel(0);
     setJustMastered(false);
     setCurrentStrokes([]);
@@ -365,6 +400,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
                   onStrokeComplete={handleStrokeComplete}
                   onStrokeStart={onStrokeStart}
                   onRealtimeFeedback={onRealtimeFeedback}
+                  onSizeChange={setCanvasSize}
                   guidePaths={config.guide ? character.svgPaths : undefined}
                   guideMode={config.guide}
                   borderColor={canvasBorderColor}
@@ -381,6 +417,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
               onStrokeComplete={handleStrokeComplete}
               onStrokeStart={onStrokeStart}
               onRealtimeFeedback={onRealtimeFeedback}
+              onSizeChange={setCanvasSize}
               guidePaths={config.guide ? character.svgPaths : undefined}
               guideMode={config.guide}
               borderColor={canvasBorderColor}

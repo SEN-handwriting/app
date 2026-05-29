@@ -27,6 +27,8 @@ interface DrawCanvasProps {
   guidePaths?: string[];
   /** Guide rendering mode */
   guideMode?: "full-thick" | "full" | "dotted-dense" | "dotted" | "dots";
+  /** Called whenever the canvas logical size changes (fluid resize or width prop update) */
+  onSizeChange?: (size: number) => void;
 }
 
 function paintGuide(
@@ -82,6 +84,7 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       borderColor = "#ddd",
       guidePaths,
       guideMode,
+      onSizeChange,
     },
     ref,
   ) {
@@ -102,6 +105,7 @@ export default forwardRef<DrawCanvasHandle, DrawCanvasProps>(
     useEffect(() => { logicalSizeRef.current = logicalSize; }, [logicalSize]);
     useEffect(() => { guidePathsRef.current = guidePaths; }, [guidePaths]);
     useEffect(() => { guideModeRef.current = guideMode; }, [guideMode]);
+    useEffect(() => { if (logicalSize > 0) onSizeChange?.(logicalSize); }, [logicalSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Non-fluid: keep logicalSize in sync with the width prop (handles dynamic canvasSize from parent)
     useEffect(() => {
