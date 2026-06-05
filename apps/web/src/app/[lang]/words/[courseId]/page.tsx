@@ -464,7 +464,7 @@ export default function WordPracticePage() {
 
       {/* Contenu */}
       {isJapanese ? (
-        <div className="flex-1 flex flex-col px-4 py-6 max-w-md mx-auto w-full">
+        <div className="flex-1 flex flex-col px-4 pt-4 pb-28 md:pb-10 max-w-md mx-auto w-full">
           <WritingPractice
             key={wordIndex}
             word={currentWord}

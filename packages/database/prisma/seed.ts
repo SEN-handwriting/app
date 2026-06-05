@@ -941,27 +941,32 @@ async function fetchKanjiVGPaths(char: string): Promise<string[]> {
 
 // ─── Kanji data ───────────────────────────────────────────────────────────────
 
+const KANJI_COURSES = [
+  { id: 'course-ja-kanji-1', level: 21, title: 'Kanji — Nature & Éléments',  description: '水 山 川 花 月 星 海 雨 火 木', prerequisiteId: 'course-ja-char-10' },
+  { id: 'course-ja-kanji-2', level: 22, title: 'Kanji — Animaux & Couleurs', description: '犬 猫 鳥 魚 青 赤 白 黒 空 風', prerequisiteId: 'course-ja-kanji-1' },
+];
+
 const KANJI_LIST = [
-  { char: '水', id: 'kanji-mizu',  romaji: 'mizu',   kana: 'みず',   meaning: 'eau',          jlpt: 'N5' },
-  { char: '山', id: 'kanji-yama',  romaji: 'yama',   kana: 'やま',   meaning: 'montagne',     jlpt: 'N5' },
-  { char: '川', id: 'kanji-kawa',  romaji: 'kawa',   kana: 'かわ',   meaning: 'rivière',      jlpt: 'N5' },
-  { char: '花', id: 'kanji-hana',  romaji: 'hana',   kana: 'はな',   meaning: 'fleur',        jlpt: 'N5' },
-  { char: '月', id: 'kanji-tsuki', romaji: 'tsuki',  kana: 'つき',   meaning: 'lune / mois',  jlpt: 'N5' },
-  { char: '星', id: 'kanji-hoshi', romaji: 'hoshi',  kana: 'ほし',   meaning: 'étoile',       jlpt: 'N4' },
-  { char: '海', id: 'kanji-umi',   romaji: 'umi',    kana: 'うみ',   meaning: 'mer',          jlpt: 'N4' },
-  { char: '雨', id: 'kanji-ame',   romaji: 'ame',    kana: 'あめ',   meaning: 'pluie',        jlpt: 'N5' },
-  { char: '火', id: 'kanji-hi',    romaji: 'hi',     kana: 'ひ',     meaning: 'feu',          jlpt: 'N5' },
-  { char: '木', id: 'kanji-ki',    romaji: 'ki',     kana: 'き',     meaning: 'arbre / bois', jlpt: 'N5' },
-  { char: '犬', id: 'kanji-inu',   romaji: 'inu',    kana: 'いぬ',   meaning: 'chien',        jlpt: 'N5' },
-  { char: '猫', id: 'kanji-neko',  romaji: 'neko',   kana: 'ねこ',   meaning: 'chat',         jlpt: 'N4' },
-  { char: '鳥', id: 'kanji-tori',  romaji: 'tori',   kana: 'とり',   meaning: 'oiseau',       jlpt: 'N4' },
-  { char: '魚', id: 'kanji-sakana',romaji: 'sakana', kana: 'さかな', meaning: 'poisson',      jlpt: 'N4' },
-  { char: '青', id: 'kanji-ao',    romaji: 'ao',     kana: 'あお',   meaning: 'bleu / vert',  jlpt: 'N5' },
-  { char: '赤', id: 'kanji-aka',   romaji: 'aka',    kana: 'あか',   meaning: 'rouge',        jlpt: 'N5' },
-  { char: '白', id: 'kanji-shiro', romaji: 'shiro',  kana: 'しろ',   meaning: 'blanc',        jlpt: 'N5' },
-  { char: '黒', id: 'kanji-kuro',  romaji: 'kuro',   kana: 'くろ',   meaning: 'noir',         jlpt: 'N5' },
-  { char: '空', id: 'kanji-sora',  romaji: 'sora',   kana: 'そら',   meaning: 'ciel / vide',  jlpt: 'N5' },
-  { char: '風', id: 'kanji-kaze',  romaji: 'kaze',   kana: 'かぜ',   meaning: 'vent',         jlpt: 'N3' },
+  { char: '水', id: 'kanji-mizu',  courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'mizu',   kana: 'みず',   meaning: 'eau',          jlpt: 'N5' },
+  { char: '山', id: 'kanji-yama',  courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'yama',   kana: 'やま',   meaning: 'montagne',     jlpt: 'N5' },
+  { char: '川', id: 'kanji-kawa',  courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'kawa',   kana: 'かわ',   meaning: 'rivière',      jlpt: 'N5' },
+  { char: '花', id: 'kanji-hana',  courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'hana',   kana: 'はな',   meaning: 'fleur',        jlpt: 'N5' },
+  { char: '月', id: 'kanji-tsuki', courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'tsuki',  kana: 'つき',   meaning: 'lune / mois',  jlpt: 'N5' },
+  { char: '星', id: 'kanji-hoshi', courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'hoshi',  kana: 'ほし',   meaning: 'étoile',       jlpt: 'N4' },
+  { char: '海', id: 'kanji-umi',   courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'umi',    kana: 'うみ',   meaning: 'mer',          jlpt: 'N4' },
+  { char: '雨', id: 'kanji-ame',   courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'ame',    kana: 'あめ',   meaning: 'pluie',        jlpt: 'N5' },
+  { char: '火', id: 'kanji-hi',    courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'hi',     kana: 'ひ',     meaning: 'feu',          jlpt: 'N5' },
+  { char: '木', id: 'kanji-ki',    courseId: 'course-ja-kanji-1', courseLevel: 21, romaji: 'ki',     kana: 'き',     meaning: 'arbre / bois', jlpt: 'N5' },
+  { char: '犬', id: 'kanji-inu',   courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'inu',    kana: 'いぬ',   meaning: 'chien',        jlpt: 'N5' },
+  { char: '猫', id: 'kanji-neko',  courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'neko',   kana: 'ねこ',   meaning: 'chat',         jlpt: 'N4' },
+  { char: '鳥', id: 'kanji-tori',  courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'tori',   kana: 'とり',   meaning: 'oiseau',       jlpt: 'N4' },
+  { char: '魚', id: 'kanji-sakana',courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'sakana', kana: 'さかな', meaning: 'poisson',      jlpt: 'N4' },
+  { char: '青', id: 'kanji-ao',    courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'ao',     kana: 'あお',   meaning: 'bleu / vert',  jlpt: 'N5' },
+  { char: '赤', id: 'kanji-aka',   courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'aka',    kana: 'あか',   meaning: 'rouge',        jlpt: 'N5' },
+  { char: '白', id: 'kanji-shiro', courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'shiro',  kana: 'しろ',   meaning: 'blanc',        jlpt: 'N5' },
+  { char: '黒', id: 'kanji-kuro',  courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'kuro',   kana: 'くろ',   meaning: 'noir',         jlpt: 'N5' },
+  { char: '空', id: 'kanji-sora',  courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'sora',   kana: 'そら',   meaning: 'ciel / vide',  jlpt: 'N5' },
+  { char: '風', id: 'kanji-kaze',  courseId: 'course-ja-kanji-2', courseLevel: 22, romaji: 'kaze',   kana: 'かぜ',   meaning: 'vent',         jlpt: 'N3' },
 ];
 
 // ─── Katakana data ────────────────────────────────────────────────────────────
@@ -1108,6 +1113,17 @@ async function seedPhrases() {
 
 async function seedKanji() {
   process.stdout.write("\n🈳  Kanji (KanjiVG)...\n");
+
+  // Créer les cours kanji
+  for (const course of KANJI_COURSES) {
+    await db.course.upsert({
+      where:  { id: course.id },
+      create: { id: course.id, languageId: 'lang-ja', type: 'character', level: course.level, title: course.title, description: course.description, prerequisiteId: course.prerequisiteId ?? null },
+      update: { title: course.title, description: course.description, prerequisiteId: course.prerequisiteId ?? null },
+    });
+    log(`✓ ${course.title}`);
+  }
+
   let ok = 0, skip = 0;
   for (const k of KANJI_LIST) {
     process.stdout.write(`  ${k.char} ${k.romaji}... `);
@@ -1124,12 +1140,13 @@ async function seedKanji() {
     await db.character.upsert({
       where:  { id: k.id },
       create: {
-        id: k.id, languageId: 'lang-ja', label: k.char, audioText: k.kana,
+        id: k.id, languageId: 'lang-ja', courseId: k.courseId, label: k.char, audioText: k.kana,
         svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length,
         meanings: JSON.stringify([k.meaning]), romaji: JSON.stringify([k.romaji]),
-        readings: JSON.stringify({ kana: [k.kana] }), jlpt: k.jlpt, courseLevel: 1,
+        readings: JSON.stringify({ kana: [k.kana] }), jlpt: k.jlpt, courseLevel: k.courseLevel,
       },
       update: {
+        courseId: k.courseId, courseLevel: k.courseLevel,
         svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length,
         meanings: JSON.stringify([k.meaning]), romaji: JSON.stringify([k.romaji]),
         readings: JSON.stringify({ kana: [k.kana] }), jlpt: k.jlpt,
