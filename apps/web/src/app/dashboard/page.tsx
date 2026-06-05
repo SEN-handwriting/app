@@ -349,16 +349,14 @@ function LanguageSection({
         );
       })()}
 
-      {(langCode === "ru-RU" || langCode === "ja-JP") && (
+      {langCode === "ru-RU" && (
         <Link
           href={`/${langCode}/words/1`}
           className="flex items-center justify-between p-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
         >
           <div>
             <p className="text-sm font-medium text-zinc-200">Mots</p>
-            <p className="text-xs text-zinc-500">
-              {langCode === "ru-RU" ? "Écriture cursive · Cours 1" : "Hiragana · Cours 1"}
-            </p>
+            <p className="text-xs text-zinc-500">Écriture cursive · Cours 1</p>
           </div>
           <span className="text-xs text-blue-400 font-medium">Pratiquer →</span>
         </Link>

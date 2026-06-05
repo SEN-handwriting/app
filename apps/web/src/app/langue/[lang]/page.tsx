@@ -267,8 +267,8 @@ export default async function LangPage({ params }: Props) {
         })()}
       </div>
 
-      {/* ── Mots ────────────────────────────────────────────────────────────── */}
-      {wordCourses.length > 0 && (
+      {/* ── Mots (masqué pour ja-JP car les kanji sont des cours de caractères) */}
+      {wordCourses.length > 0 && lang !== 'ja-JP' && (
         <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
           Mots
         </h2>
@@ -313,7 +313,7 @@ export default async function LangPage({ params }: Props) {
       </div>
 
       {/* ── Phrases ─────────────────────────────────────────────────────────── */}
-      {phraseCourses.length > 0 && (
+      {phraseCourses.length > 0 && lang !== 'ja-JP' && (
         <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
           Phrases
         </h2>
