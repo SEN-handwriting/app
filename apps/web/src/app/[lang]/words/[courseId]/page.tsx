@@ -38,9 +38,13 @@ function speak(text: string, lang: string) {
 
 // ── Pratique écriture caractère par caractère ────────────────────────────────
 
-function WritingPractice({ word, onBack, onComplete }: {
+function WritingPractice({ word, wordIndex, total, onBack, onPrev, onNext, onComplete }: {
   word: Word
+  wordIndex: number
+  total: number
   onBack: () => void
+  onPrev: () => void
+  onNext: () => void
   onComplete: () => void
 }) {
   const [characters, setCharacters] = useState<Character[]>([])
@@ -95,26 +99,56 @@ function WritingPractice({ word, onBack, onComplete }: {
 
   return (
     <>
-      {/* Header avec titre du mot + ℹ️ */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <button onClick={onBack} className="text-sm text-zinc-400 hover:text-white transition-colors py-1">← Retour</button>
-        <div className="text-center">
-          <p className="text-3xl font-bold">{word.text}</p>
-          {word.kana && <p className="text-sm text-zinc-400 mt-0.5">{word.kana}</p>}
-        </div>
-        <button
-          onClick={() => setShowInfo(true)}
-          className="flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
-        >
-          ℹ️
-        </button>
+      {/* Header : navigation mots + ℹ️ */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <button onClick={onPrev} disabled={wordIndex === 0} className="text-sm text-zinc-400 hover:text-white disabled:opacity-30 transition-colors py-1 pr-2">←</button>
+        <span className="text-xs text-zinc-500">{wordIndex + 1} / {total}</span>
+        <button onClick={onNext} disabled={wordIndex === total - 1} className="text-sm text-zinc-400 hover:text-white disabled:opacity-30 transition-colors py-1 pl-2">→</button>
       </div>
 
-      {/* Indicateur de caractère */}
+      {/* Titre du mot + TTS + ℹ️ */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex-1" />
+        <div className="text-center">
+          <p className="text-4xl font-bold">{word.text}</p>
+          {word.kana && <p className="text-base text-zinc-400 mt-0.5">{word.kana}</p>}
+          <p className="text-sm text-indigo-300 font-medium mt-0.5">{word.meaning}</p>
+        </div>
+        <div className="flex-1 flex justify-end gap-2">
+          <button
+            onClick={() => speak(word.audioText ?? word.kana ?? word.text, word.lang)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors text-sm"
+          >
+            🔊
+          </button>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
+          >
+            ℹ️
+          </button>
+        </div>
+      </div>
+
+      {/* Chips des caractères du mot */}
       {characters.length > 1 && (
-        <p className="text-center text-xs text-zinc-600 mb-3">
-          Caractère {charIndex + 1} / {characters.length}
-        </p>
+        <div className="flex justify-center gap-2 mb-3">
+          {characters.map((c, i) => (
+            <div
+              key={c.id}
+              className={[
+                "flex flex-col items-center px-3 py-1 rounded-lg border text-sm font-bold transition-colors",
+                i === charIndex
+                  ? "border-indigo-500 bg-indigo-950 text-indigo-200"
+                  : i < charIndex
+                  ? "border-green-700 bg-green-950 text-green-400"
+                  : "border-zinc-700 bg-zinc-800 text-zinc-500",
+              ].join(" ")}
+            >
+              {c.label}
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Preview + replay */}
@@ -223,7 +257,11 @@ function KanjiCard({ word, index, total, onKnow, onAgain, onPrev, onNext }: {
   if (writing) return (
     <WritingPractice
       word={word}
+      wordIndex={index}
+      total={total}
       onBack={() => setWriting(false)}
+      onPrev={onPrev}
+      onNext={onNext}
       onComplete={() => { setWriting(false); onKnow() }}
     />
   )
@@ -430,7 +468,11 @@ export default function WordPracticePage() {
           <WritingPractice
             key={wordIndex}
             word={currentWord}
+            wordIndex={wordIndex}
+            total={total}
             onBack={() => router.back()}
+            onPrev={handlePrev}
+            onNext={handleNext}
             onComplete={handleKnow}
           />
         </div>

@@ -296,37 +296,58 @@ function LanguageSection({
         <span className="text-zinc-600">{total - mastered - started} restants</span>
       </div>
 
-      {/* Character grid */}
-      <div className="flex flex-wrap gap-1.5">
-        {allChars.map((char) => {
-          const prog = progressMap.get(char.id);
-          const level = prog?.practiceLevel ?? 0;
-          const isDue = prog ? new Date(prog.nextReview).getTime() <= now : false;
-          const isMastered = level >= 5;
-          const isStarted = level > 0 && level < 5;
+      {/* Characters snapshot — due first, then started, capped at 20 */}
+      {(() => {
+        const dueChars = allChars.filter(c => {
+          const p = progressMap.get(c.id);
+          return p && new Date(p.nextReview).getTime() <= now && p.practiceLevel < 5;
+        });
+        const startedChars = allChars.filter(c => {
+          const p = progressMap.get(c.id);
+          return p && p.practiceLevel > 0 && p.practiceLevel < 5 && new Date(p.nextReview).getTime() > now;
+        });
+        const shown = [...dueChars, ...startedChars].slice(0, 20);
+        const rest = dueChars.length + startedChars.length - shown.length;
 
-          return (
-            <Link
-              key={char.id}
-              href={`/langue/${langCode}/${encodeURIComponent(char.id)}/learn`}
-              title={`${char.label}${char.romaji?.[0] ? ` (${char.romaji[0]})` : ""} — Niveau ${level}`}
-              className={[
-                "relative flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold border transition-colors active:scale-95",
-                isMastered
-                  ? "border-green-600 bg-green-950 text-green-300"
-                  : isStarted
-                  ? "border-yellow-700 bg-yellow-950 text-yellow-200"
-                  : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500",
-              ].join(" ")}
-            >
-              {char.label}
-              {isDue && !isMastered && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+        if (shown.length === 0) return null;
+        return (
+          <div>
+            <p className="text-xs text-zinc-500 mb-1.5">
+              {dueChars.length > 0 ? `${dueChars.length} à réviser` : "En cours"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {shown.map((char) => {
+                const p = progressMap.get(char.id);
+                const isDue = p ? new Date(p.nextReview).getTime() <= now : false;
+                return (
+                  <Link
+                    key={char.id}
+                    href={`/langue/${langCode}/${encodeURIComponent(char.id)}/learn`}
+                    title={char.romaji?.[0] ?? char.label}
+                    className={[
+                      "relative flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold border transition-colors active:scale-95",
+                      isDue
+                        ? "border-orange-600 bg-orange-950 text-orange-200"
+                        : "border-yellow-700 bg-yellow-950 text-yellow-200",
+                    ].join(" ")}
+                  >
+                    {char.label}
+                    {isDue && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />}
+                  </Link>
+                );
+              })}
+              {rest > 0 && (
+                <Link
+                  href={`/langue/${langCode}`}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-xs font-medium border border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500 transition-colors"
+                >
+                  +{rest}
+                </Link>
               )}
-            </Link>
-          );
-        })}
-      </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {(langCode === "ru-RU" || langCode === "ja-JP") && (
         <Link
