@@ -1,6 +1,6 @@
 import { db } from "../src/client";
-import ruPrintUpper from '../data/ru-print-upper.json';
-import ruPrintLower from '../data/ru-print-lower.json';
+import ruFontUpper from '../data/ru-font-upper.json';
+import ruFontLower from '../data/ru-font-lower.json';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,17 +79,17 @@ const COURSES: CourseSeed[] = [
 // ─── Cursive path lookup maps ─────────────────────────────────────────────────
 
 const printUpperPathMap = new Map<string, string[]>(
-  ruPrintUpper.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
+  ruFontUpper.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
 );
 const printUpperStrokeCountMap = new Map<string, number>(
-  ruPrintUpper.characters.map((c) => [c.id, c.strokeCount])
+  ruFontUpper.characters.map((c) => [c.id, c.strokeCount])
 );
 
 const printLowerPathMap = new Map<string, string[]>(
-  ruPrintLower.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
+  ruFontLower.characters.map((c) => [c.id, c.strokes.map((s) => s.d)])
 );
 const printLowerStrokeCountMap = new Map<string, number>(
-  ruPrintLower.characters.map((c) => [c.id, c.strokeCount])
+  ruFontLower.characters.map((c) => [c.id, c.strokeCount])
 );
 
 // ─── Caractères ───────────────────────────────────────────────────────────────

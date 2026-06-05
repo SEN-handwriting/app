@@ -42,3 +42,12 @@ yarn-error.log*
 
 # Git worktrees
 .worktrees/
+
+# Font files (used by scripts, too large for git)
+scripts/*.ttf
+scripts/*.otf
+scripts/*.woff
+scripts/*.woff2
+
+# package-lock.json (project uses bun)
+package-lock.json
