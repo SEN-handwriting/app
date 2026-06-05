@@ -42,7 +42,7 @@ function WritingPractice({ word, onBack, onComplete }: {
   const [charIndex, setCharIndex] = useState(0)
 
   useEffect(() => {
-    const source = word.kana ?? word.text
+    const source = word.text
     const chars = [...source]
     const seen = new Set<string>()
     const unique = chars.filter(k => { if (seen.has(k)) return false; seen.add(k); return true })
@@ -92,7 +92,12 @@ function WritingPractice({ word, onBack, onComplete }: {
       </div>
       <div className="text-center">
         <p className="text-5xl font-bold">{current.label}</p>
-        {current.romaji?.[0] && <p className="text-sm text-zinc-500 mt-1">{current.romaji[0]}</p>}
+        {(current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]) && (
+          <p className="text-xl text-zinc-400 mt-1">
+            {current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]}
+          </p>
+        )}
+        {current.romaji?.[0] && <p className="text-sm text-zinc-500 mt-0.5">{current.romaji[0]}</p>}
       </div>
       <PracticeGrid
         key={current.id}
