@@ -48,12 +48,12 @@ function WritingPractice({ word, onBack, onComplete }: {
   const [charIndex, setCharIndex] = useState(0)
   const [successCount, setSuccessCount] = useState(0)
   const [replayKey, setReplayKey] = useState(0)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => { setSuccessCount(0); setReplayKey(k => k + 1) }, [charIndex])
 
   useEffect(() => {
-    const source = word.text
-    const chars = [...source]
+    const chars = [...word.text]
     const seen = new Set<string>()
     const unique = chars.filter(k => { if (seen.has(k)) return false; seen.add(k); return true })
     if (!unique.length) { setIsLoading(false); return }
@@ -70,13 +70,13 @@ function WritingPractice({ word, onBack, onComplete }: {
         setIsLoading(false)
       })
       .catch(() => setIsLoading(false))
-  }, [word.id, word.kana, word.text, word.lang])
+  }, [word.id, word.text, word.lang])
 
   if (isLoading) return <div className="text-zinc-400 py-10 text-center text-sm">Chargement…</div>
 
   if (!characters.length) return (
     <div className="text-center space-y-4 py-8">
-      <p className="text-zinc-500 text-sm">Aucun caractère à pratiquer pour ce mot.</p>
+      <p className="text-zinc-500 text-sm">Aucun caractère trouvé — lance d'abord le seed kanji.</p>
       <button onClick={onBack} className="px-4 py-2 rounded-xl bg-zinc-800 text-sm hover:bg-zinc-700 transition-colors">← Retour</button>
     </div>
   )
@@ -85,29 +85,42 @@ function WritingPractice({ word, onBack, onComplete }: {
     <div className="flex flex-col items-center gap-6 py-8">
       <p className="text-4xl">🎉</p>
       <p className="font-semibold text-lg">Mot pratiqué !</p>
-      <div className="flex gap-3">
-        <button onClick={onBack} className="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium transition-colors">← Retour</button>
-        <button onClick={onComplete} className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-colors">Mot suivant →</button>
-      </div>
+      <button onClick={onComplete} className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-colors">
+        Mot suivant →
+      </button>
     </div>
   )
 
   const current = characters[charIndex]!
 
   return (
-    <div className="w-full max-w-md space-y-4">
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-sm text-zinc-400 hover:text-white transition-colors">← Retour</button>
-        <span className="text-sm text-zinc-500">{charIndex + 1} / {characters.length}</span>
+    <>
+      {/* Header avec titre du mot + ℹ️ */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <button onClick={onBack} className="text-sm text-zinc-400 hover:text-white transition-colors py-1">← Retour</button>
+        <div className="text-center">
+          <p className="text-3xl font-bold">{word.text}</p>
+          {word.kana && <p className="text-sm text-zinc-400 mt-0.5">{word.kana}</p>}
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
+        >
+          ℹ️
+        </button>
       </div>
+
+      {/* Indicateur de caractère */}
+      {characters.length > 1 && (
+        <p className="text-center text-xs text-zinc-600 mb-3">
+          Caractère {charIndex + 1} / {characters.length}
+        </p>
+      )}
+
+      {/* Preview + replay */}
       <div className="flex flex-col items-center gap-2">
         <CharacterPreview key={replayKey} character={current} showStrokes autoPlay size={160} showLabel={false} />
         <div className="flex items-center gap-3">
-          {(current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]) && (
-            <span className="text-lg text-zinc-400">
-              {current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]}
-            </span>
-          )}
           {current.romaji?.[0] && <span className="text-sm text-zinc-500">{current.romaji[0]}</span>}
           <button
             onClick={() => setReplayKey(k => k + 1)}
@@ -117,24 +130,77 @@ function WritingPractice({ word, onBack, onComplete }: {
           </button>
         </div>
       </div>
+
+      {/* Canvas */}
       <PracticeGrid
         key={current.id}
         character={current}
         initialLevel={1}
         onSuccess={() => setSuccessCount(n => n + 1)}
       />
+
+      {/* Banner succès */}
       {successCount >= 2 && (
         <div className="flex items-center justify-between rounded-xl border border-green-800 bg-green-950 px-5 py-3">
-          <span className="text-green-400 font-medium text-sm">✓ Maîtrisé !</span>
+          <span className="text-green-400 font-medium text-sm">✓ Bien joué !</span>
           <button
             onClick={() => setCharIndex(i => i + 1)}
             className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors font-medium text-sm"
           >
-            Suivant →
+            {charIndex + 1 < characters.length ? "Caractère suivant →" : "Terminer →"}
           </button>
         </div>
       )}
-    </div>
+
+      {/* Info bottom sheet */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setShowInfo(false)}>
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-700 rounded-t-2xl px-5 pt-5 pb-8"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <span className="font-semibold text-lg">{word.text}</span>
+                {word.kana && <span className="text-zinc-400 ml-2 text-sm">{word.kana}</span>}
+              </div>
+              <button onClick={() => setShowInfo(false)} className="text-zinc-400 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex gap-3">
+                <span className="text-zinc-500 w-20 shrink-0">Sens</span>
+                <span className="text-zinc-200">{word.meaning}</span>
+              </div>
+              {word.reading && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-20 shrink-0">Lecture</span>
+                  <span className="text-zinc-200">{word.reading}</span>
+                </div>
+              )}
+              {word.etymology && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-20 shrink-0">Étymologie</span>
+                  <span className="text-zinc-200 leading-relaxed">{word.etymology}</span>
+                </div>
+              )}
+              {word.components && word.components.length > 0 && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-20 shrink-0">Composants</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {word.components.map((c, i) => (
+                      <div key={i} className="flex flex-col items-center px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700">
+                        <span className="text-xl">{c.char}</span>
+                        <span className="text-[10px] text-zinc-500 mt-0.5">{c.meaning}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -350,39 +416,22 @@ export default function WordPracticePage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-6 pb-2">
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-zinc-400 hover:text-white transition-colors"
-        >
-          ← Retour
-        </button>
-        <span className="text-sm text-zinc-500">
-          {wordIndex + 1} / {total}
-          {isJapanese && progress > 0 && ` · ${progress} acquis`}
-        </span>
-      </div>
-
       {/* Progress bar */}
       <div className="w-full h-1 bg-zinc-800">
         <div
-          className={`h-1 transition-all duration-300 ${isJapanese ? "bg-indigo-500" : "bg-green-500"}`}
-          style={{ width: isJapanese ? `${(progress / total) * 100}%` : `${((wordIndex + 1) / total) * 100}%` }}
+          className="h-1 bg-indigo-500 transition-all duration-300"
+          style={{ width: `${((wordIndex + 1) / total) * 100}%` }}
         />
       </div>
 
       {/* Contenu */}
       {isJapanese ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <KanjiCard
+        <div className="flex-1 flex flex-col px-4 py-6 max-w-md mx-auto w-full">
+          <WritingPractice
+            key={wordIndex}
             word={currentWord}
-            index={wordIndex}
-            total={total}
-            onKnow={handleKnow}
-            onAgain={handleAgain}
-            onPrev={handlePrev}
-            onNext={handleNext}
+            onBack={() => router.back()}
+            onComplete={handleKnow}
           />
         </div>
       ) : (
