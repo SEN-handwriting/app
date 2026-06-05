@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import WordPracticeGrid from "../../../../components/WordPracticeGrid"
+import PracticeGrid from "../../../../components/PracticeGrid"
+import type { Character } from "../../../../data/characters"
 
 interface KanjiComponent { char: string; meaning: string }
 
@@ -28,6 +30,80 @@ function speak(text: string, lang: string) {
   window.speechSynthesis.speak(utt)
 }
 
+// ── Pratique écriture caractère par caractère ────────────────────────────────
+
+function WritingPractice({ word, onBack, onComplete }: {
+  word: Word
+  onBack: () => void
+  onComplete: () => void
+}) {
+  const [characters, setCharacters] = useState<Character[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [charIndex, setCharIndex] = useState(0)
+
+  useEffect(() => {
+    const source = word.kana ?? word.text
+    const chars = [...source]
+    const seen = new Set<string>()
+    const unique = chars.filter(k => { if (seen.has(k)) return false; seen.add(k); return true })
+    if (!unique.length) { setIsLoading(false); return }
+    fetch(`/api/characters?lang=${word.lang}&labels=${encodeURIComponent(unique.join(","))}`)
+      .then(r => r.json())
+      .then((data: Character[]) => {
+        const byLabel = new Map(data.map(c => [c.label, c]))
+        const ordered: Character[] = []
+        const added = new Set<string>()
+        for (const k of chars) {
+          if (!added.has(k) && byLabel.has(k)) { added.add(k); ordered.push(byLabel.get(k)!) }
+        }
+        setCharacters(ordered)
+        setIsLoading(false)
+      })
+      .catch(() => setIsLoading(false))
+  }, [word.id, word.kana, word.text, word.lang])
+
+  if (isLoading) return <div className="text-zinc-400 py-10 text-center text-sm">Chargement…</div>
+
+  if (!characters.length) return (
+    <div className="text-center space-y-4 py-8">
+      <p className="text-zinc-500 text-sm">Aucun caractère à pratiquer pour ce mot.</p>
+      <button onClick={onBack} className="px-4 py-2 rounded-xl bg-zinc-800 text-sm hover:bg-zinc-700 transition-colors">← Retour</button>
+    </div>
+  )
+
+  if (charIndex >= characters.length) return (
+    <div className="flex flex-col items-center gap-6 py-8">
+      <p className="text-4xl">🎉</p>
+      <p className="font-semibold text-lg">Mot pratiqué !</p>
+      <div className="flex gap-3">
+        <button onClick={onBack} className="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium transition-colors">← Retour</button>
+        <button onClick={onComplete} className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition-colors">Mot suivant →</button>
+      </div>
+    </div>
+  )
+
+  const current = characters[charIndex]!
+
+  return (
+    <div className="w-full max-w-md space-y-4">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="text-sm text-zinc-400 hover:text-white transition-colors">← Retour</button>
+        <span className="text-sm text-zinc-500">{charIndex + 1} / {characters.length}</span>
+      </div>
+      <div className="text-center">
+        <p className="text-5xl font-bold">{current.label}</p>
+        {current.romaji?.[0] && <p className="text-sm text-zinc-500 mt-1">{current.romaji[0]}</p>}
+      </div>
+      <PracticeGrid
+        key={current.id}
+        character={current}
+        initialLevel={1}
+        onSuccess={() => setCharIndex(i => i + 1)}
+      />
+    </div>
+  )
+}
+
 // ── Fiche kanji (japonais) ────────────────────────────────────────────────────
 
 function KanjiCard({ word, index, total, onKnow, onAgain, onPrev, onNext }: {
@@ -40,8 +116,17 @@ function KanjiCard({ word, index, total, onKnow, onAgain, onPrev, onNext }: {
   onNext: () => void
 }) {
   const [flipped, setFlipped] = useState(false)
+  const [writing, setWriting] = useState(false)
 
-  useEffect(() => { setFlipped(false) }, [word.id])
+  useEffect(() => { setFlipped(false); setWriting(false) }, [word.id])
+
+  if (writing) return (
+    <WritingPractice
+      word={word}
+      onBack={() => setWriting(false)}
+      onComplete={() => { setWriting(false); onKnow() }}
+    />
+  )
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-md">
@@ -111,13 +196,21 @@ function KanjiCard({ word, index, total, onKnow, onAgain, onPrev, onNext }: {
         )}
       </div>
 
-      {/* TTS */}
-      <button
-        onClick={() => speak(word.audioText ?? word.kana ?? word.text, word.lang)}
-        className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
-      >
-        🔊 Écouter
-      </button>
+      {/* TTS + écriture */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => speak(word.audioText ?? word.kana ?? word.text, word.lang)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
+        >
+          🔊 Écouter
+        </button>
+        <button
+          onClick={() => setWriting(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
+        >
+          ✏️ Écrire
+        </button>
+      </div>
 
       {/* Actions (après flip) */}
       {flipped && (

@@ -26,6 +26,8 @@ interface PracticeGridProps {
   canvasClassName?: string;
   /** When true, adapts to fill parent height without scrolling (mobile learn page) */
   fillHeight?: boolean;
+  /** When set, skips the API fetch and starts at this level with local progression */
+  initialLevel?: number;
 }
 
 interface Toast {
@@ -35,7 +37,7 @@ interface Toast {
   id: number;
 }
 
-export default function PracticeGrid({ character, onSuccess, canvasClassName, fillHeight }: PracticeGridProps) {
+export default function PracticeGrid({ character, onSuccess, canvasClassName, fillHeight, initialLevel }: PracticeGridProps) {
   const [practiceLevel, setPracticeLevel] = useState(0);
   const [isLoadingLevel, setIsLoadingLevel] = useState(true);
   const [currentStrokes, setCurrentStrokes] = useState<Array<Array<{ x: number; y: number }>>>([]);
@@ -121,6 +123,13 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
     isRestartModeRef.current = false;
     canvasRef.current?.clear();
 
+    if (initialLevel !== undefined) {
+      isRestartModeRef.current = true;
+      setPracticeLevel(initialLevel);
+      setIsLoadingLevel(false);
+      return;
+    }
+
     fetch(`/api/progress?characterId=${encodeURIComponent(character.id)}`)
       .then(r => r.json())
       .then((data: { practiceLevel: number }) => {
@@ -128,7 +137,7 @@ export default function PracticeGrid({ character, onSuccess, canvasClassName, fi
       })
       .catch(() => setPracticeLevel(0))
       .finally(() => setIsLoadingLevel(false));
-  }, [character.id]);
+  }, [character.id, initialLevel]);
 
   const showToast = useCallback((message: string, score: number, isValid: boolean) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

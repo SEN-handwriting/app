@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
   const lang = searchParams.get("lang");
   const level = searchParams.get("level");
   const id = searchParams.get("id");
+  const labels = searchParams.get("labels");
 
   try {
     const rows = await db.character.findMany({
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
         ...(lang && { language: { code: lang } }),
         ...(level && { courseLevel: parseInt(level, 10) }),
         ...(id && { id }),
+        ...(labels && { label: { in: labels.split(",") } }),
       },
       include: { language: true },
       orderBy: [{ courseLevel: "asc" }, { id: "asc" }],

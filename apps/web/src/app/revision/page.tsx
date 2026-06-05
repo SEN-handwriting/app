@@ -144,6 +144,8 @@ function PracticeCharacter({
   const [showStrokes, setShowStrokes] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [succeeded, setSucceeded] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
+  const REQUIRED_SUCCESSES = 2;
 
   useEffect(() => {
     if (character) {
@@ -214,7 +216,12 @@ function PracticeCharacter({
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 py-3">
           <PracticeGrid
             character={character}
-            onSuccess={() => setSucceeded(true)}
+            initialLevel={1}
+            onSuccess={() => {
+              const next = successCount + 1;
+              setSuccessCount(next);
+              if (next >= REQUIRED_SUCCESSES) setSucceeded(true);
+            }}
             fillHeight
           />
         </div>
@@ -348,7 +355,12 @@ function PracticeCharacter({
             <h2 className="text-base font-semibold text-zinc-300">Zone de pratique</h2>
             <PracticeGrid
               character={character}
-              onSuccess={() => setSucceeded(true)}
+              initialLevel={1}
+              onSuccess={() => {
+                const next = successCount + 1;
+                setSuccessCount(next);
+                if (next >= REQUIRED_SUCCESSES) setSucceeded(true);
+              }}
             />
 
             {succeeded && (
