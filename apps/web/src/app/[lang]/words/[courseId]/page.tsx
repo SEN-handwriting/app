@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import WordPracticeGrid from "../../../../components/WordPracticeGrid"
 import PracticeGrid from "../../../../components/PracticeGrid"
+import CharacterPreviewRaw from "../../../../components/CharacterPreview"
 import type { Character } from "../../../../data/characters"
+
+// Cast to avoid forwardRef JSX type conflict in [lang] dynamic routes
+const CharacterPreview = CharacterPreviewRaw as unknown as React.FC<{
+  character: Character; showStrokes: boolean; size?: number; showLabel?: boolean
+}>
 
 interface KanjiComponent { char: string; meaning: string }
 
@@ -40,6 +46,9 @@ function WritingPractice({ word, onBack, onComplete }: {
   const [characters, setCharacters] = useState<Character[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [charIndex, setCharIndex] = useState(0)
+  const [replayKey, setReplayKey] = useState(0)
+
+  useEffect(() => { setReplayKey(k => k + 1) }, [charIndex])
 
   useEffect(() => {
     const source = word.text
@@ -90,14 +99,22 @@ function WritingPractice({ word, onBack, onComplete }: {
         <button onClick={onBack} className="text-sm text-zinc-400 hover:text-white transition-colors">← Retour</button>
         <span className="text-sm text-zinc-500">{charIndex + 1} / {characters.length}</span>
       </div>
-      <div className="text-center">
-        <p className="text-5xl font-bold">{current.label}</p>
-        {(current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]) && (
-          <p className="text-xl text-zinc-400 mt-1">
-            {current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]}
-          </p>
-        )}
-        {current.romaji?.[0] && <p className="text-sm text-zinc-500 mt-0.5">{current.romaji[0]}</p>}
+      <div className="flex flex-col items-center gap-2">
+        <CharacterPreview key={replayKey} character={current} showStrokes size={160} showLabel={false} />
+        <div className="flex items-center gap-3">
+          {(current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]) && (
+            <span className="text-lg text-zinc-400">
+              {current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]}
+            </span>
+          )}
+          {current.romaji?.[0] && <span className="text-sm text-zinc-500">{current.romaji[0]}</span>}
+          <button
+            onClick={() => setReplayKey(k => k + 1)}
+            className="px-3 py-1.5 rounded-lg border border-zinc-700 text-xs hover:bg-zinc-800 transition-colors"
+          >
+            Rejouer
+          </button>
+        </div>
       </div>
       <PracticeGrid
         key={current.id}

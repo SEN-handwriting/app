@@ -1,4 +1,3 @@
-import https from 'https';
 import { db } from "../src/client";
 import ruCursive from '../data/ru-cursive.json';
 import ruCursiveLower from '../data/ru-cursive-lower.json';
@@ -923,21 +922,6 @@ const PHRASES: PhraseSeed[] = [
 
 // ─── KanjiVG helpers ──────────────────────────────────────────────────────────
 
-function fetchUrl(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
-        return resolve(fetchUrl(Array.isArray(res.headers.location) ? res.headers.location[0]! : res.headers.location));
-      if (res.statusCode !== 200)
-        return reject(new Error(`HTTP ${res.statusCode}`));
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk: string) => data += chunk);
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
-  });
-}
-
 function extractSvgPaths(svg: string): string[] {
   const paths: string[] = [];
   const re = /<path[^>]*\sd\s*=\s*"([^"]+)"[^>]*>/gi;
@@ -947,9 +931,11 @@ function extractSvgPaths(svg: string): string[] {
 }
 
 async function fetchKanjiVGPaths(char: string): Promise<string[]> {
-  const hex = char.codePointAt(0)!.toString(16).padStart(4, '0');
+  const hex = char.codePointAt(0)!.toString(16).padStart(5, '0');
   const url = `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${hex}.svg`;
-  const svg = await fetchUrl(url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const svg = await res.text();
   return extractSvgPaths(svg);
 }
 
@@ -1129,8 +1115,8 @@ async function seedKanji() {
     try {
       svgPaths = await fetchKanjiVGPaths(k.char);
       process.stdout.write(`${svgPaths.length} paths\n`);
-    } catch {
-      process.stdout.write(`⚠️  fetch failed — skip\n`);
+    } catch (err) {
+      process.stdout.write(`⚠️  ${err instanceof Error ? err.message : String(err)}\n`);
       skip++;
       continue;
     }
@@ -1173,8 +1159,8 @@ async function seedKatakana() {
     try {
       svgPaths = await fetchKanjiVGPaths(k.char);
       process.stdout.write(`${svgPaths.length} paths\n`);
-    } catch {
-      process.stdout.write(`⚠️  fetch failed — skip\n`);
+    } catch (err) {
+      process.stdout.write(`⚠️  ${err instanceof Error ? err.message : String(err)}\n`);
       skip++;
       continue;
     }
