@@ -139,13 +139,37 @@ export default async function LangPage({ params }: Props) {
 
       {/* ── Caractères ──────────────────────────────────────────────────────── */}
       {courses.length > 0 && (
-        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mb-2">
+        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mb-3">
           Caractères
         </h2>
       )}
 
-      <div className="grid gap-4">
-        {courses.map((course) => {
+      <div className="space-y-8">
+        {(() => {
+          // Regroup courses by script section (hiragana = 1-10, katakana = 11-20, etc.)
+          const sections: { label: string; items: typeof courses }[] = [];
+          let currentSection: { label: string; items: typeof courses } | null = null;
+          for (const course of courses) {
+            const sectionLabel =
+              course.title.toLowerCase().includes("katakana") ? "Katakana" :
+              course.title.toLowerCase().includes("hiragana") ? "Hiragana" :
+              course.title.toLowerCase().includes("majuscule") ? "Majuscules" :
+              course.title.toLowerCase().includes("minuscule") ? "Minuscules" :
+              "Caractères";
+            if (!currentSection || currentSection.label !== sectionLabel) {
+              currentSection = { label: sectionLabel, items: [] };
+              sections.push(currentSection);
+            }
+            currentSection.items.push(course);
+          }
+
+          return sections.map((section) => (
+            <div key={section.label}>
+              <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+                {section.label}
+              </h3>
+              <div className="grid gap-4">
+                {section.items.map((course) => {
           const chars = course.characters;
           const isLocked = lockedCourseIds.has(course.id);
           const mastered = masteredByCourse.get(course.id) ?? 0;
@@ -164,22 +188,18 @@ export default async function LangPage({ params }: Props) {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
-                  <h2 className={cn("text-lg font-semibold", isLocked && "text-zinc-500")}>
+                  <h2 className={cn("text-base font-semibold", isLocked && "text-zinc-500")}>
                     {isLocked ? "🔒 " : ""}{course.title}
                   </h2>
-                  {course.description && (
-                    <p className="text-sm text-zinc-500 mt-0.5">{course.description}</p>
-                  )}
                 </div>
-                <div className="text-right text-sm text-zinc-500 shrink-0">
-                  <div className="text-xs">{chars.length} chars</div>
+                <div className="text-right shrink-0">
                   {userId && !isLocked && total > 0 && (
-                    <div className={cn("text-xs mt-0.5", mastered === total ? "text-green-400" : "text-zinc-500")}>
-                      {mastered}/{total} ({masteredPct}%)
+                    <div className={cn("text-xs", mastered === total ? "text-green-400" : "text-zinc-500")}>
+                      {mastered}/{total}
                     </div>
                   )}
                   {isLocked && (
-                    <div className="text-xs text-zinc-600 mt-0.5">
+                    <div className="text-xs text-zinc-600">
                       {Math.ceil(UNLOCK_THRESHOLD * 100)}% requis
                     </div>
                   )}
@@ -197,7 +217,7 @@ export default async function LangPage({ params }: Props) {
                 </div>
               )}
 
-              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(68px, 1fr))" }}>
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))" }}>
                 {chars.map((c) => {
                   const romaji = c.romaji ? (JSON.parse(c.romaji) as string[])[0] : null;
 
@@ -205,10 +225,10 @@ export default async function LangPage({ params }: Props) {
                     return (
                       <div
                         key={c.id}
-                        className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-2.5 text-center cursor-not-allowed"
+                        className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-3 text-center cursor-not-allowed"
                       >
-                        <p className="text-2xl text-zinc-600">{c.label}</p>
-                        {romaji && <p className="text-[10px] mt-0.5 text-zinc-700">{romaji}</p>}
+                        <p className="text-3xl text-zinc-600">{c.label}</p>
+                        {romaji && <p className="text-[10px] mt-1 text-zinc-700">{romaji}</p>}
                       </div>
                     );
                   }
@@ -219,7 +239,7 @@ export default async function LangPage({ params }: Props) {
                       key={c.id}
                       href={`/langue/${encodeURIComponent(lang)}/${encodeURIComponent(c.id)}/learn`}
                       className={cn(
-                        "relative rounded-xl p-2.5 text-center transition-colors active:scale-95",
+                        "relative rounded-xl p-3 text-center transition-colors active:scale-95",
                         level >= 2
                           ? "border-2 border-green-500 bg-green-950/30"
                           : level >= 0
@@ -232,8 +252,8 @@ export default async function LangPage({ params }: Props) {
                       {dueCharIds.has(c.id) && (
                         <span className="absolute top-1 left-1 text-[9px]">🔄</span>
                       )}
-                      <p className="text-2xl">{c.label}</p>
-                      {romaji && <p className="text-[10px] mt-0.5 text-zinc-400">{romaji}</p>}
+                      <p className="text-3xl">{c.label}</p>
+                      {romaji && <p className="text-[10px] mt-1 text-zinc-400">{romaji}</p>}
                     </Link>
                   );
                 })}
@@ -241,6 +261,10 @@ export default async function LangPage({ params }: Props) {
             </div>
           );
         })}
+              </div>
+            </div>
+          ));
+        })()}
       </div>
 
       {/* ── Mots ────────────────────────────────────────────────────────────── */}

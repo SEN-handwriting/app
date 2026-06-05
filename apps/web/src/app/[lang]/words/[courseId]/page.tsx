@@ -154,7 +154,7 @@ function WritingPractice({ word, onBack, onComplete }: {
 
       {/* Info bottom sheet */}
       {showInfo && (
-        <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setShowInfo(false)}>
+        <div className="fixed inset-0 z-[80] bg-black/60" onClick={() => setShowInfo(false)}>
           <div
             className="absolute bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-700 rounded-t-2xl px-5 pt-5 pb-8"
             onClick={e => e.stopPropagation()}
