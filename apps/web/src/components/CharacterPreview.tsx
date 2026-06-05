@@ -1,6 +1,6 @@
 "use client";
 
-import type { Character } from "../data/characters";
+import type { Character } from "#/data/characters";
 import React, {
   forwardRef,
   useEffect,

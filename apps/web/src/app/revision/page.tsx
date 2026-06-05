@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRevisionQueue } from "../../hooks/useRevisionQueue";
 import { useCharacter } from "../../hooks/useCharacters";
@@ -57,13 +57,14 @@ export default function RevisionPage() {
     const currentItem = data.items[currentIndex]!;
 
     function handleAdvance() {
-      const next = currentIndex + 1;
       setCompletedCount((c) => c + 1);
-      if (next >= data!.items.length) {
-        setMode("summary");
-      } else {
-        setCurrentIndex(next);
-      }
+      setCurrentIndex((idx) => {
+        const next = idx + 1;
+        if (next >= data!.items.length) {
+          setMode("summary");
+        }
+        return next >= data!.items.length ? idx : next;
+      });
     }
 
     return (
@@ -138,54 +139,232 @@ function PracticeCharacter({
   onAdvance: () => void;
 }) {
   const { data: character, isLoading } = useCharacter(item.characterId);
-  const previewRef = useRef<CharacterPreviewHandle | null>(null);
+  const mobilePreviewRef = useRef<CharacterPreviewHandle | null>(null);
+  const desktopPreviewRef = useRef<CharacterPreviewHandle | null>(null);
+  const [showStrokes, setShowStrokes] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
   const [succeeded, setSucceeded] = useState(false);
+
+  useEffect(() => {
+    if (character) {
+      const t = setTimeout(() => {
+        mobilePreviewRef.current?.replay();
+        desktopPreviewRef.current?.replay();
+      }, 50);
+      return () => clearTimeout(t);
+    }
+  }, [character?.id]);
 
   if (isLoading || !character) {
     return <div className="text-zinc-400 py-10">Chargement du caractère…</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Modèle</h2>
-          <CharacterPreview ref={previewRef} character={character} showStrokes />
-          <div className="flex gap-2 mt-3">
+    <>
+      {/* ── MOBILE layout ── */}
+      <div className="md:hidden flex flex-col" style={{ height: "calc(100dvh - 12rem)" }}>
+        <div className="flex-none border-b border-zinc-800 px-4 pt-2 pb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold">{character.label}</span>
+              {character.romaji?.[0] && (
+                <span className="text-sm text-zinc-500">{character.romaji[0]}</span>
+              )}
+            </div>
             <button
-              onClick={() => previewRef.current?.replay()}
-              className="flex-1 py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors"
+              onClick={() => setShowInfo(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors text-sm"
+            >
+              ℹ️
+            </button>
+          </div>
+
+          <div className="flex justify-center">
+            <CharacterPreview
+              ref={mobilePreviewRef}
+              character={character}
+              showStrokes={showStrokes}
+              size={110}
+              showLabel={false}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <button
+              onClick={() => setShowStrokes((s) => !s)}
+              className="py-2.5 rounded-xl border border-zinc-700 text-xs hover:bg-zinc-800 transition-colors active:bg-zinc-700"
+            >
+              {showStrokes ? "Cacher" : "Traits"}
+            </button>
+            <button
+              onClick={() => mobilePreviewRef.current?.replay()}
+              className="py-2.5 rounded-xl border border-zinc-700 text-xs hover:bg-zinc-800 transition-colors active:bg-zinc-700"
             >
               Rejouer
             </button>
             <button
-              onClick={() => previewRef.current?.speak()}
-              className="flex-1 py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors"
+              onClick={() => mobilePreviewRef.current?.speak()}
+              className="py-2.5 rounded-xl border border-zinc-700 text-xs hover:bg-zinc-800 transition-colors active:bg-zinc-700"
             >
-              🔊 Écouter
+              🔊 Son
             </button>
           </div>
         </div>
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Tracé</h2>
+
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 py-3">
           <PracticeGrid
             character={character}
             onSuccess={() => setSucceeded(true)}
+            fillHeight
           />
         </div>
+
+        {succeeded && (
+          <div className="flex-none flex items-center justify-between border-t border-green-800 bg-green-950 px-5 py-3">
+            <span className="text-green-400 font-medium text-sm">✓ Révisé !</span>
+            <button
+              onClick={onAdvance}
+              className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors font-medium text-sm"
+            >
+              Suivant →
+            </button>
+          </div>
+        )}
       </div>
 
-      {succeeded && (
-        <div className="flex items-center justify-between rounded-xl border border-green-800 bg-green-950 px-5 py-4">
-          <span className="text-green-400 font-medium">✓ Révisé !</span>
-          <button
-            onClick={onAdvance}
-            className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors font-medium text-sm"
+      {/* Info bottom sheet (mobile) */}
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 md:hidden"
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-700 rounded-t-2xl px-5 pt-5 pb-8"
+            onClick={(e) => e.stopPropagation()}
           >
-            Suivant →
-          </button>
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-semibold text-base">{character.label}</span>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="text-zinc-400 hover:text-white text-xl w-8 h-8 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              {character.meanings && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-16 shrink-0">Sens</span>
+                  <span className="text-zinc-200">{character.meanings.join(", ")}</span>
+                </div>
+              )}
+              {character.readings?.kana && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-16 shrink-0">Lecture</span>
+                  <span className="text-zinc-200">{character.readings.kana.join(", ")}</span>
+                </div>
+              )}
+              {character.jlpt && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-16 shrink-0">JLPT</span>
+                  <span className="text-zinc-200">{character.jlpt}</span>
+                </div>
+              )}
+              {character.strokeCount && (
+                <div className="flex gap-3">
+                  <span className="text-zinc-500 w-16 shrink-0">Traits</span>
+                  <span className="text-zinc-200">{character.strokeCount}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-    </div>
+
+      {/* ── DESKTOP layout ── */}
+      <div className="hidden md:block">
+        <div className="grid grid-cols-2 gap-12">
+          <div className="space-y-4">
+            <h2 className="text-base font-semibold text-zinc-300">Modèle</h2>
+            <CharacterPreview
+              ref={desktopPreviewRef}
+              character={character}
+              showStrokes={showStrokes}
+              showLabel={false}
+            />
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setShowStrokes((s) => !s)}
+                className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
+              >
+                {showStrokes ? "Cacher" : "Traits"}
+              </button>
+              <button
+                onClick={() => desktopPreviewRef.current?.replay()}
+                className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
+              >
+                Rejouer
+              </button>
+              <button
+                onClick={() => desktopPreviewRef.current?.speak()}
+                className="py-3 rounded-xl border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors active:bg-zinc-700"
+              >
+                🔊
+              </button>
+            </div>
+
+            {(character.meanings || character.readings?.kana || character.jlpt || character.strokeCount) && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-2 text-sm">
+                {character.meanings && (
+                  <div className="flex gap-2">
+                    <span className="text-zinc-500 shrink-0">Sens</span>
+                    <span className="text-zinc-200">{character.meanings.join(", ")}</span>
+                  </div>
+                )}
+                {character.readings?.kana && (
+                  <div className="flex gap-2">
+                    <span className="text-zinc-500 shrink-0">Lecture</span>
+                    <span className="text-zinc-200">{character.readings.kana.join(", ")}</span>
+                  </div>
+                )}
+                {character.jlpt && (
+                  <div className="flex gap-2">
+                    <span className="text-zinc-500 shrink-0">JLPT</span>
+                    <span className="text-zinc-200">{character.jlpt}</span>
+                  </div>
+                )}
+                {character.strokeCount && (
+                  <div className="flex gap-2">
+                    <span className="text-zinc-500 shrink-0">Traits</span>
+                    <span className="text-zinc-200">{character.strokeCount}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-base font-semibold text-zinc-300">Zone de pratique</h2>
+            <PracticeGrid
+              character={character}
+              onSuccess={() => setSucceeded(true)}
+            />
+
+            {succeeded && (
+              <div className="flex items-center justify-between rounded-xl border border-green-800 bg-green-950 px-5 py-4">
+                <span className="text-green-400 font-medium">✓ Révisé !</span>
+                <button
+                  onClick={onAdvance}
+                  className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors font-medium text-sm"
+                >
+                  Suivant →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

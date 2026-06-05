@@ -21,6 +21,7 @@ export default async function LangPage({ params }: Props) {
 
   if (!language) notFound();
   const userId = session?.user.id ?? null;
+  const isAdmin = session?.user.email === 'hugodemontpro@gmail.com';
 
   const [courses, wordCourses, phraseCourses, progressRows] = await Promise.all([
     db.course.findMany({
@@ -41,7 +42,7 @@ export default async function LangPage({ params }: Props) {
     userId
       ? db.userProgress.findMany({
           where: { userId, character: { languageId: language.id } },
-          select: { characterId: true, practiceLevel: true },
+          select: { characterId: true, practiceLevel: true, nextReview: true },
         })
       : Promise.resolve([]),
   ]);
@@ -49,6 +50,11 @@ export default async function LangPage({ params }: Props) {
   // ── Progression par caractère ──────────────────────────────────────────────
 
   const progressByCharId = new Map(progressRows.map((r) => [r.characterId, r.practiceLevel]));
+
+  const now = new Date();
+  const dueCharIds = new Set(
+    progressRows.filter((r) => r.nextReview <= now).map((r) => r.characterId),
+  );
 
   const masteredByCourse = new Map<string, number>();
   for (const course of courses) {
@@ -73,13 +79,14 @@ export default async function LangPage({ params }: Props) {
       lockedCourseIds.add(courses[i]!.id);
     }
   }
+  if (isAdmin) lockedCourseIds.clear();
 
   // ── Verrouillage des cours mots/phrases (basé sur le prérequis caractères) ─
 
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
   function prereqMet(prerequisiteId: string | null | undefined): boolean {
-    if (!prerequisiteId) return true;
+    if (!prerequisiteId || isAdmin) return true;
     const prereq = courseById.get(prerequisiteId);
     if (!prereq) return false;
     const mastered = masteredByCourse.get(prereq.id) ?? 0;
@@ -222,6 +229,9 @@ export default async function LangPage({ params }: Props) {
                     >
                       {level >= 2 && <span className="absolute top-1 right-1 text-[9px]">⭐</span>}
                       {level === 1 && <span className="absolute top-1 right-1 text-[9px]">✏️</span>}
+                      {dueCharIds.has(c.id) && (
+                        <span className="absolute top-1 left-1 text-[9px]">🔄</span>
+                      )}
                       <p className="text-2xl">{c.label}</p>
                       {romaji && <p className="text-[10px] mt-0.5 text-zinc-400">{romaji}</p>}
                     </Link>
