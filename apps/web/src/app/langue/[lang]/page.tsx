@@ -269,93 +269,97 @@ export default async function LangPage({ params }: Props) {
 
       {/* ── Mots (masqué pour ja-JP car les kanji sont des cours de caractères) */}
       {wordCourses.length > 0 && lang !== 'ja-JP' && (
-        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
-          Mots
-        </h2>
+        <>
+          <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
+            Mots
+          </h2>
+          <div className="grid gap-3">
+            {wordCourses.map((course) => {
+              const isLocked = !prereqMet(course.prerequisiteId);
+              const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
+
+              if (isLocked) {
+                return (
+                  <div
+                    key={course.id}
+                    className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
+                      {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
+                      <p className="text-xs text-zinc-700 mt-0.5">{course.words.length} mots</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={course.id}
+                  href={`/${encodeURIComponent(lang)}/words/${course.level}`}
+                  className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{course.title}</p>
+                    {course.description && (
+                      <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
+                    )}
+                    <p className="text-xs text-zinc-600 mt-0.5">{course.words.length} mots</p>
+                  </div>
+                  <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       )}
-      <div className="grid gap-3">
-        {wordCourses.map((course) => {
-          const isLocked = !prereqMet(course.prerequisiteId);
-          const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
 
-          if (isLocked) {
-            return (
-              <div
-                key={course.id}
-                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
-                  {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
-                  <p className="text-xs text-zinc-700 mt-0.5">{course.words.length} mots</p>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <Link
-              key={course.id}
-              href={`/${encodeURIComponent(lang)}/words/${course.level}`}
-              className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{course.title}</p>
-                {course.description && (
-                  <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
-                )}
-                <p className="text-xs text-zinc-600 mt-0.5">{course.words.length} mots</p>
-              </div>
-              <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* ── Phrases ─────────────────────────────────────────────────────────── */}
+      {/* ── Phrases (masqué pour ja-JP) ─────────────────────────────────────── */}
       {phraseCourses.length > 0 && lang !== 'ja-JP' && (
-        <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
-          Phrases
-        </h2>
+        <>
+          <h2 className="text-base font-semibold text-zinc-400 uppercase tracking-widest mt-8 mb-2">
+            Phrases
+          </h2>
+          <div className="grid gap-3">
+            {phraseCourses.map((course) => {
+              const isLocked = !prereqMet(course.prerequisiteId);
+              const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
+
+              if (isLocked) {
+                return (
+                  <div
+                    key={course.id}
+                    className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
+                      {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
+                      <p className="text-xs text-zinc-700 mt-0.5">{course.phrases.length} phrases</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={course.id}
+                  href={`/${encodeURIComponent(lang)}/phrases/${course.level}`}
+                  className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{course.title}</p>
+                    {course.description && (
+                      <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
+                    )}
+                    <p className="text-xs text-zinc-600 mt-0.5">{course.phrases.length} phrases</p>
+                  </div>
+                  <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       )}
-      <div className="grid gap-3">
-        {phraseCourses.map((course) => {
-          const isLocked = !prereqMet(course.prerequisiteId);
-          const hint = isLocked ? prereqLabel(course.prerequisiteId) : null;
-
-          if (isLocked) {
-            return (
-              <div
-                key={course.id}
-                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 opacity-60 cursor-not-allowed"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-zinc-500">🔒 {course.title}</p>
-                  {hint && <p className="text-xs text-zinc-600 mt-0.5">{hint}</p>}
-                  <p className="text-xs text-zinc-700 mt-0.5">{course.phrases.length} phrases</p>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <Link
-              key={course.id}
-              href={`/${encodeURIComponent(lang)}/phrases/${course.level}`}
-              className="flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 hover:bg-zinc-800 transition-colors"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{course.title}</p>
-                {course.description && (
-                  <p className="text-xs text-zinc-500 mt-0.5">{course.description}</p>
-                )}
-                <p className="text-xs text-zinc-600 mt-0.5">{course.phrases.length} phrases</p>
-              </div>
-              <span className="ml-4 text-zinc-600 text-sm shrink-0">→</span>
-            </Link>
-          );
-        })}
-      </div>
     </main>
   );
 }
