@@ -1,0 +1,162 @@
+{
+  "lang": "ru-RU",
+  "style": "print",
+  "version": "1.0",
+  "note": "Print-style (печатные) paths for uppercase Cyrillic. ViewBox 0 0 109 109. Main body x:[22,90] y:[20,96]. Diacritics (Ё, Й) use y as low as 4. Descenders (Ц, Щ, Д) extend to x:92 y:98.",
+  "characters": [
+    { "id": "cyrillic-a", "label": "А", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M54,22 L26,88" },
+        { "order": 2, "d": "M54,22 L82,88" },
+        { "order": 3, "d": "M36,60 L72,60" }
+    ]},
+    { "id": "cyrillic-b", "label": "Б", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M82,22 L25,22 L25,56" },
+        { "order": 2, "d": "M25,53 C30,48 82,50 82,68 C82,88 55,90 25,88" }
+    ]},
+    { "id": "cyrillic-v", "label": "В", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88" },
+        { "order": 2, "d": "M28,22 C52,20 80,26 80,40 C80,55 52,56 28,55" },
+        { "order": 3, "d": "M28,55 C52,53 84,60 84,74 C84,88 52,90 28,88" }
+    ]},
+    { "id": "cyrillic-g", "label": "Г", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M25,22 L84,22" },
+        { "order": 2, "d": "M25,22 L25,88" }
+    ]},
+    { "id": "cyrillic-d", "label": "Д", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88 L18,98" },
+        { "order": 2, "d": "M28,22 L80,22 L80,88 L90,98" },
+        { "order": 3, "d": "M18,88 L90,88" }
+    ]},
+    { "id": "cyrillic-ye", "label": "Е", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M82,22 L25,22 L25,88" },
+        { "order": 2, "d": "M25,55 L70,55" },
+        { "order": 3, "d": "M25,88 L82,88" }
+    ]},
+    { "id": "cyrillic-yo", "label": "Ё", "strokeCount": 5, "strokes": [
+        { "order": 1, "d": "M82,22 L25,22 L25,88" },
+        { "order": 2, "d": "M25,55 L70,55" },
+        { "order": 3, "d": "M25,88 L82,88" },
+        { "order": 4, "d": "M38,10 L38,15" },
+        { "order": 5, "d": "M62,10 L62,15" }
+    ]},
+    { "id": "cyrillic-zh", "label": "Ж", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M54,22 L54,88" },
+        { "order": 2, "d": "M22,22 L54,42 L22,88" },
+        { "order": 3, "d": "M86,22 L54,42 L86,88" }
+    ]},
+    { "id": "cyrillic-z", "label": "З", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M26,32 C26,18 84,18 84,42 C84,55 48,57 48,57" },
+        { "order": 2, "d": "M48,57 C84,57 84,72 84,82 C84,96 26,96 26,80" }
+    ]},
+    { "id": "cyrillic-i", "label": "И", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M26,22 L26,88" },
+        { "order": 2, "d": "M82,22 L82,88" },
+        { "order": 3, "d": "M82,22 L26,88" }
+    ]},
+    { "id": "cyrillic-j", "label": "Й", "strokeCount": 4, "strokes": [
+        { "order": 1, "d": "M26,22 L26,88" },
+        { "order": 2, "d": "M82,22 L82,88" },
+        { "order": 3, "d": "M82,22 L26,88" },
+        { "order": 4, "d": "M36,12 C36,4 74,4 74,12" }
+    ]},
+    { "id": "cyrillic-k", "label": "К", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88" },
+        { "order": 2, "d": "M28,52 L82,22" },
+        { "order": 3, "d": "M28,52 L82,88" }
+    ]},
+    { "id": "cyrillic-l", "label": "Л", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M84,22 C60,22 34,26 26,88" },
+        { "order": 2, "d": "M84,22 L84,88" }
+    ]},
+    { "id": "cyrillic-m", "label": "М", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M22,88 L22,22" },
+        { "order": 2, "d": "M22,22 L54,60 L86,22" },
+        { "order": 3, "d": "M86,22 L86,88" }
+    ]},
+    { "id": "cyrillic-n", "label": "Н", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88" },
+        { "order": 2, "d": "M82,22 L82,88" },
+        { "order": 3, "d": "M28,55 L82,55" }
+    ]},
+    { "id": "cyrillic-o", "label": "О", "strokeCount": 1, "strokes": [
+        { "order": 1, "d": "M54,20 C74,20 88,36 88,55 C88,74 74,90 54,90 C34,90 20,74 20,55 C20,36 34,20 54,20" }
+    ]},
+    { "id": "cyrillic-p", "label": "П", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M25,22 L84,22" },
+        { "order": 2, "d": "M25,22 L25,88" },
+        { "order": 3, "d": "M84,22 L84,88" }
+    ]},
+    { "id": "cyrillic-r", "label": "Р", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88" },
+        { "order": 2, "d": "M28,22 C52,20 82,26 82,44 C82,60 52,62 28,60" }
+    ]},
+    { "id": "cyrillic-s", "label": "С", "strokeCount": 1, "strokes": [
+        { "order": 1, "d": "M84,32 C84,20 22,20 22,55 C22,90 84,90 84,78" }
+    ]},
+    { "id": "cyrillic-t", "label": "Т", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M18,22 L90,22" },
+        { "order": 2, "d": "M54,22 L54,88" }
+    ]},
+    { "id": "cyrillic-u", "label": "У", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M24,22 L54,55" },
+        { "order": 2, "d": "M84,22 L54,55 C50,68 40,82 32,92" }
+    ]},
+    { "id": "cyrillic-f", "label": "Ф", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M54,18 L54,92" },
+        { "order": 2, "d": "M54,30 C34,30 20,42 20,55 C20,68 34,80 54,80 C74,80 88,68 88,55 C88,42 74,30 54,30" }
+    ]},
+    { "id": "cyrillic-kh", "label": "Х", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M22,22 L86,88" },
+        { "order": 2, "d": "M86,22 L22,88" }
+    ]},
+    { "id": "cyrillic-ts", "label": "Ц", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M25,22 L84,22" },
+        { "order": 2, "d": "M25,22 L25,88" },
+        { "order": 3, "d": "M84,22 L84,88 L92,96" }
+    ]},
+    { "id": "cyrillic-ch", "label": "Ч", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M26,22 C26,42 50,56 80,56" },
+        { "order": 2, "d": "M80,22 L80,88" }
+    ]},
+    { "id": "cyrillic-sh", "label": "Ш", "strokeCount": 4, "strokes": [
+        { "order": 1, "d": "M22,22 L86,22" },
+        { "order": 2, "d": "M22,22 L22,88" },
+        { "order": 3, "d": "M54,22 L54,88" },
+        { "order": 4, "d": "M86,22 L86,88" }
+    ]},
+    { "id": "cyrillic-shch", "label": "Щ", "strokeCount": 4, "strokes": [
+        { "order": 1, "d": "M22,22 L82,22" },
+        { "order": 2, "d": "M22,22 L22,88" },
+        { "order": 3, "d": "M52,22 L52,88" },
+        { "order": 4, "d": "M82,22 L82,88 L90,96" }
+    ]},
+    { "id": "cyrillic-hard-sign", "label": "Ъ", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M22,22 L44,22" },
+        { "order": 2, "d": "M44,22 L44,88" },
+        { "order": 3, "d": "M44,55 C44,55 84,55 84,70 C84,88 58,90 44,88" }
+    ]},
+    { "id": "cyrillic-yeru", "label": "Ы", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M26,22 L26,88" },
+        { "order": 2, "d": "M26,55 C26,55 66,55 66,70 C66,88 44,90 26,88" },
+        { "order": 3, "d": "M78,22 L78,88" }
+    ]},
+    { "id": "cyrillic-soft-sign", "label": "Ь", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M28,22 L28,88" },
+        { "order": 2, "d": "M28,55 C28,55 82,55 82,70 C82,88 55,90 28,88" }
+    ]},
+    { "id": "cyrillic-e", "label": "Э", "strokeCount": 2, "strokes": [
+        { "order": 1, "d": "M28,32 C28,18 86,18 86,55 C86,92 28,92 28,78" },
+        { "order": 2, "d": "M86,55 L50,55" }
+    ]},
+    { "id": "cyrillic-yu", "label": "Ю", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M22,22 L22,88" },
+        { "order": 2, "d": "M22,55 L40,55" },
+        { "order": 3, "d": "M40,22 C60,22 80,36 80,55 C80,74 60,88 40,88" }
+    ]},
+    { "id": "cyrillic-ya", "label": "Я", "strokeCount": 3, "strokes": [
+        { "order": 1, "d": "M80,22 L80,88" },
+        { "order": 2, "d": "M80,22 C80,22 20,22 20,44 C20,58 54,60 80,58" },
+        { "order": 3, "d": "M80,58 L24,88" }
+    ]}
+  ]
+}
