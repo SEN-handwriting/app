@@ -9,7 +9,7 @@ import type { Character } from "../../../../data/characters"
 
 // Cast to avoid forwardRef JSX type conflict in [lang] dynamic routes
 const CharacterPreview = CharacterPreviewRaw as unknown as React.FC<{
-  character: Character; showStrokes: boolean; size?: number; showLabel?: boolean
+  character: Character; showStrokes: boolean; size?: number; showLabel?: boolean; autoPlay?: boolean
 }>
 
 interface KanjiComponent { char: string; meaning: string }
@@ -46,9 +46,10 @@ function WritingPractice({ word, onBack, onComplete }: {
   const [characters, setCharacters] = useState<Character[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [charIndex, setCharIndex] = useState(0)
+  const [successCount, setSuccessCount] = useState(0)
   const [replayKey, setReplayKey] = useState(0)
 
-  useEffect(() => { setReplayKey(k => k + 1) }, [charIndex])
+  useEffect(() => { setSuccessCount(0); setReplayKey(k => k + 1) }, [charIndex])
 
   useEffect(() => {
     const source = word.text
@@ -100,7 +101,7 @@ function WritingPractice({ word, onBack, onComplete }: {
         <span className="text-sm text-zinc-500">{charIndex + 1} / {characters.length}</span>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <CharacterPreview key={replayKey} character={current} showStrokes size={160} showLabel={false} />
+        <CharacterPreview key={replayKey} character={current} showStrokes autoPlay size={160} showLabel={false} />
         <div className="flex items-center gap-3">
           {(current.readings?.kana?.[0] ?? current.readings?.kunyomi?.[0]) && (
             <span className="text-lg text-zinc-400">
@@ -112,7 +113,7 @@ function WritingPractice({ word, onBack, onComplete }: {
             onClick={() => setReplayKey(k => k + 1)}
             className="px-3 py-1.5 rounded-lg border border-zinc-700 text-xs hover:bg-zinc-800 transition-colors"
           >
-            Rejouer
+            ▶ Rejouer
           </button>
         </div>
       </div>
@@ -120,8 +121,19 @@ function WritingPractice({ word, onBack, onComplete }: {
         key={current.id}
         character={current}
         initialLevel={1}
-        onSuccess={() => setCharIndex(i => i + 1)}
+        onSuccess={() => setSuccessCount(n => n + 1)}
       />
+      {successCount >= 2 && (
+        <div className="flex items-center justify-between rounded-xl border border-green-800 bg-green-950 px-5 py-3">
+          <span className="text-green-400 font-medium text-sm">✓ Maîtrisé !</span>
+          <button
+            onClick={() => setCharIndex(i => i + 1)}
+            className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors font-medium text-sm"
+          >
+            Suivant →
+          </button>
+        </div>
+      )}
     </div>
   )
 }

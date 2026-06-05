@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
 } from "react";
 
 export type CharacterPreviewHandle = {
@@ -19,35 +18,39 @@ interface CharacterPreviewProps {
   showStrokes: boolean;
   size?: number;
   showLabel?: boolean;
+  autoPlay?: boolean;
 }
 
 export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
-  function CharacterPreview({ character, showStrokes, size = 300, showLabel = true }, ref) {
+  function CharacterPreview({ character, showStrokes, size = 300, showLabel = true, autoPlay = false }, ref) {
     const pathRefs = useRef<Array<SVGPathElement | null>>([]);
     const timeouts = useRef<number[]>([]);
-    const [animating, setAnimating] = useState(false);
 
     useEffect(() => {
       pathRefs.current.forEach(p => {
+        if (!p) return;
         try {
-          if (!p) return;
           const len = p.getTotalLength();
           p.style.transition = "none";
           p.style.strokeDasharray = `${len}`;
           p.style.strokeDashoffset = `${len}`;
           p.getBoundingClientRect();
-        } catch {}
+        } catch { /* SVG not in DOM yet */ }
       });
+
+      if (autoPlay) {
+        const id = window.setTimeout(() => playAnimation(), 50);
+        timeouts.current.push(id);
+      }
 
       return () => {
         timeouts.current.forEach(id => clearTimeout(id));
         timeouts.current = [];
       };
-    }, [character.id]);
+    }, [character.id, autoPlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
     function playAnimation() {
       if (!pathRefs.current.length) return;
-      setAnimating(true);
       timeouts.current.forEach(id => clearTimeout(id));
       timeouts.current = [];
 
@@ -68,13 +71,8 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
 
           timeouts.current.push(id);
           delay += 1000;
-        } catch {}
+        } catch { /* path not ready */ }
       });
-
-      const endId = window.setTimeout(() => {
-        setAnimating(false);
-      }, delay + 100);
-      timeouts.current.push(endId);
     }
 
     function speak() {
@@ -87,7 +85,7 @@ export default forwardRef<CharacterPreviewHandle, CharacterPreviewProps>(
         );
         ut.lang = character.lang || "ja-JP";
         window.speechSynthesis.speak(ut);
-      } catch {}
+      } catch { /* speech synthesis unavailable */ }
     }
 
     useImperativeHandle(ref, () => ({ replay: playAnimation, speak }));
