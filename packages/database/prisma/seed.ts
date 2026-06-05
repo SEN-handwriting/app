@@ -1,3 +1,4 @@
+import https from 'https';
 import { db } from "../src/client";
 import ruCursive from '../data/ru-cursive.json';
 import ruCursiveLower from '../data/ru-cursive-lower.json';
@@ -920,6 +921,127 @@ const PHRASES: PhraseSeed[] = [
   { id: "ru-phrase-pomogite",  languageId: "lang-ru", courseId: "course-ru-phrase-2", text: "Помогите!",                reading: "Pomogite!",             translation: "Aidez-moi !",                 audioText: "Помогите",               courseLevel: 2 },
 ];
 
+// ─── KanjiVG helpers ──────────────────────────────────────────────────────────
+
+function fetchUrl(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
+        return resolve(fetchUrl(Array.isArray(res.headers.location) ? res.headers.location[0]! : res.headers.location));
+      if (res.statusCode !== 200)
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function extractSvgPaths(svg: string): string[] {
+  const paths: string[] = [];
+  const re = /<path[^>]*\sd\s*=\s*"([^"]+)"[^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(svg)) !== null) if (m[1]) paths.push(m[1]);
+  return paths;
+}
+
+async function fetchKanjiVGPaths(char: string): Promise<string[]> {
+  const hex = char.codePointAt(0)!.toString(16).padStart(4, '0');
+  const url = `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${hex}.svg`;
+  const svg = await fetchUrl(url);
+  return extractSvgPaths(svg);
+}
+
+// ─── Kanji data ───────────────────────────────────────────────────────────────
+
+const KANJI_LIST = [
+  { char: '水', id: 'kanji-mizu',  romaji: 'mizu',   kana: 'みず',   meaning: 'eau',          jlpt: 'N5' },
+  { char: '山', id: 'kanji-yama',  romaji: 'yama',   kana: 'やま',   meaning: 'montagne',     jlpt: 'N5' },
+  { char: '川', id: 'kanji-kawa',  romaji: 'kawa',   kana: 'かわ',   meaning: 'rivière',      jlpt: 'N5' },
+  { char: '花', id: 'kanji-hana',  romaji: 'hana',   kana: 'はな',   meaning: 'fleur',        jlpt: 'N5' },
+  { char: '月', id: 'kanji-tsuki', romaji: 'tsuki',  kana: 'つき',   meaning: 'lune / mois',  jlpt: 'N5' },
+  { char: '星', id: 'kanji-hoshi', romaji: 'hoshi',  kana: 'ほし',   meaning: 'étoile',       jlpt: 'N4' },
+  { char: '海', id: 'kanji-umi',   romaji: 'umi',    kana: 'うみ',   meaning: 'mer',          jlpt: 'N4' },
+  { char: '雨', id: 'kanji-ame',   romaji: 'ame',    kana: 'あめ',   meaning: 'pluie',        jlpt: 'N5' },
+  { char: '火', id: 'kanji-hi',    romaji: 'hi',     kana: 'ひ',     meaning: 'feu',          jlpt: 'N5' },
+  { char: '木', id: 'kanji-ki',    romaji: 'ki',     kana: 'き',     meaning: 'arbre / bois', jlpt: 'N5' },
+  { char: '犬', id: 'kanji-inu',   romaji: 'inu',    kana: 'いぬ',   meaning: 'chien',        jlpt: 'N5' },
+  { char: '猫', id: 'kanji-neko',  romaji: 'neko',   kana: 'ねこ',   meaning: 'chat',         jlpt: 'N4' },
+  { char: '鳥', id: 'kanji-tori',  romaji: 'tori',   kana: 'とり',   meaning: 'oiseau',       jlpt: 'N4' },
+  { char: '魚', id: 'kanji-sakana',romaji: 'sakana', kana: 'さかな', meaning: 'poisson',      jlpt: 'N4' },
+  { char: '青', id: 'kanji-ao',    romaji: 'ao',     kana: 'あお',   meaning: 'bleu / vert',  jlpt: 'N5' },
+  { char: '赤', id: 'kanji-aka',   romaji: 'aka',    kana: 'あか',   meaning: 'rouge',        jlpt: 'N5' },
+  { char: '白', id: 'kanji-shiro', romaji: 'shiro',  kana: 'しろ',   meaning: 'blanc',        jlpt: 'N5' },
+  { char: '黒', id: 'kanji-kuro',  romaji: 'kuro',   kana: 'くろ',   meaning: 'noir',         jlpt: 'N5' },
+  { char: '空', id: 'kanji-sora',  romaji: 'sora',   kana: 'そら',   meaning: 'ciel / vide',  jlpt: 'N5' },
+  { char: '風', id: 'kanji-kaze',  romaji: 'kaze',   kana: 'かぜ',   meaning: 'vent',         jlpt: 'N3' },
+];
+
+// ─── Katakana data ────────────────────────────────────────────────────────────
+
+const KATAKANA_COURSES = [
+  { id: 'course-ja-char-11', level: 11, title: 'Katakana — Voyelles ア イ ウ エ オ',  description: 'Les 5 voyelles katakana',     prerequisiteId: 'course-ja-char-10' },
+  { id: 'course-ja-char-12', level: 12, title: 'Katakana — Série K カ キ ク ケ コ',   description: 'Syllabes katakana rangée K',  prerequisiteId: 'course-ja-char-11' },
+  { id: 'course-ja-char-13', level: 13, title: 'Katakana — Série S サ シ ス セ ソ',   description: 'Syllabes katakana rangée S',  prerequisiteId: 'course-ja-char-12' },
+  { id: 'course-ja-char-14', level: 14, title: 'Katakana — Série T タ チ ツ テ ト',   description: 'Syllabes katakana rangée T',  prerequisiteId: 'course-ja-char-13' },
+  { id: 'course-ja-char-15', level: 15, title: 'Katakana — Série N ナ ニ ヌ ネ ノ',   description: 'Syllabes katakana rangée N',  prerequisiteId: 'course-ja-char-14' },
+  { id: 'course-ja-char-16', level: 16, title: 'Katakana — Série H ハ ヒ フ ヘ ホ',   description: 'Syllabes katakana rangée H',  prerequisiteId: 'course-ja-char-15' },
+  { id: 'course-ja-char-17', level: 17, title: 'Katakana — Série M マ ミ ム メ モ',   description: 'Syllabes katakana rangée M',  prerequisiteId: 'course-ja-char-16' },
+  { id: 'course-ja-char-18', level: 18, title: 'Katakana — Série Y ヤ ユ ヨ',         description: 'Syllabes katakana rangée Y',  prerequisiteId: 'course-ja-char-17' },
+  { id: 'course-ja-char-19', level: 19, title: 'Katakana — Série R ラ リ ル レ ロ',   description: 'Syllabes katakana rangée R',  prerequisiteId: 'course-ja-char-18' },
+  { id: 'course-ja-char-20', level: 20, title: 'Katakana — Série W ワ ヲ ン',          description: 'Syllabes katakana finales',   prerequisiteId: 'course-ja-char-19' },
+];
+
+const KATAKANA_LIST = [
+  { char: 'ア', id: 'katakana-a',   courseId: 'course-ja-char-11', courseLevel: 11, romaji: 'a',   kana: 'あ' },
+  { char: 'イ', id: 'katakana-i',   courseId: 'course-ja-char-11', courseLevel: 11, romaji: 'i',   kana: 'い' },
+  { char: 'ウ', id: 'katakana-u',   courseId: 'course-ja-char-11', courseLevel: 11, romaji: 'u',   kana: 'う' },
+  { char: 'エ', id: 'katakana-e',   courseId: 'course-ja-char-11', courseLevel: 11, romaji: 'e',   kana: 'え' },
+  { char: 'オ', id: 'katakana-o',   courseId: 'course-ja-char-11', courseLevel: 11, romaji: 'o',   kana: 'お' },
+  { char: 'カ', id: 'katakana-ka',  courseId: 'course-ja-char-12', courseLevel: 12, romaji: 'ka',  kana: 'か' },
+  { char: 'キ', id: 'katakana-ki',  courseId: 'course-ja-char-12', courseLevel: 12, romaji: 'ki',  kana: 'き' },
+  { char: 'ク', id: 'katakana-ku',  courseId: 'course-ja-char-12', courseLevel: 12, romaji: 'ku',  kana: 'く' },
+  { char: 'ケ', id: 'katakana-ke',  courseId: 'course-ja-char-12', courseLevel: 12, romaji: 'ke',  kana: 'け' },
+  { char: 'コ', id: 'katakana-ko',  courseId: 'course-ja-char-12', courseLevel: 12, romaji: 'ko',  kana: 'こ' },
+  { char: 'サ', id: 'katakana-sa',  courseId: 'course-ja-char-13', courseLevel: 13, romaji: 'sa',  kana: 'さ' },
+  { char: 'シ', id: 'katakana-shi', courseId: 'course-ja-char-13', courseLevel: 13, romaji: 'shi', kana: 'し' },
+  { char: 'ス', id: 'katakana-su',  courseId: 'course-ja-char-13', courseLevel: 13, romaji: 'su',  kana: 'す' },
+  { char: 'セ', id: 'katakana-se',  courseId: 'course-ja-char-13', courseLevel: 13, romaji: 'se',  kana: 'せ' },
+  { char: 'ソ', id: 'katakana-so',  courseId: 'course-ja-char-13', courseLevel: 13, romaji: 'so',  kana: 'そ' },
+  { char: 'タ', id: 'katakana-ta',  courseId: 'course-ja-char-14', courseLevel: 14, romaji: 'ta',  kana: 'た' },
+  { char: 'チ', id: 'katakana-chi', courseId: 'course-ja-char-14', courseLevel: 14, romaji: 'chi', kana: 'ち' },
+  { char: 'ツ', id: 'katakana-tsu', courseId: 'course-ja-char-14', courseLevel: 14, romaji: 'tsu', kana: 'つ' },
+  { char: 'テ', id: 'katakana-te',  courseId: 'course-ja-char-14', courseLevel: 14, romaji: 'te',  kana: 'て' },
+  { char: 'ト', id: 'katakana-to',  courseId: 'course-ja-char-14', courseLevel: 14, romaji: 'to',  kana: 'と' },
+  { char: 'ナ', id: 'katakana-na',  courseId: 'course-ja-char-15', courseLevel: 15, romaji: 'na',  kana: 'な' },
+  { char: 'ニ', id: 'katakana-ni',  courseId: 'course-ja-char-15', courseLevel: 15, romaji: 'ni',  kana: 'に' },
+  { char: 'ヌ', id: 'katakana-nu',  courseId: 'course-ja-char-15', courseLevel: 15, romaji: 'nu',  kana: 'ぬ' },
+  { char: 'ネ', id: 'katakana-ne',  courseId: 'course-ja-char-15', courseLevel: 15, romaji: 'ne',  kana: 'ね' },
+  { char: 'ノ', id: 'katakana-no',  courseId: 'course-ja-char-15', courseLevel: 15, romaji: 'no',  kana: 'の' },
+  { char: 'ハ', id: 'katakana-ha',  courseId: 'course-ja-char-16', courseLevel: 16, romaji: 'ha',  kana: 'は' },
+  { char: 'ヒ', id: 'katakana-hi',  courseId: 'course-ja-char-16', courseLevel: 16, romaji: 'hi',  kana: 'ひ' },
+  { char: 'フ', id: 'katakana-fu',  courseId: 'course-ja-char-16', courseLevel: 16, romaji: 'fu',  kana: 'ふ' },
+  { char: 'ヘ', id: 'katakana-he',  courseId: 'course-ja-char-16', courseLevel: 16, romaji: 'he',  kana: 'へ' },
+  { char: 'ホ', id: 'katakana-ho',  courseId: 'course-ja-char-16', courseLevel: 16, romaji: 'ho',  kana: 'ほ' },
+  { char: 'マ', id: 'katakana-ma',  courseId: 'course-ja-char-17', courseLevel: 17, romaji: 'ma',  kana: 'ま' },
+  { char: 'ミ', id: 'katakana-mi',  courseId: 'course-ja-char-17', courseLevel: 17, romaji: 'mi',  kana: 'み' },
+  { char: 'ム', id: 'katakana-mu',  courseId: 'course-ja-char-17', courseLevel: 17, romaji: 'mu',  kana: 'む' },
+  { char: 'メ', id: 'katakana-me',  courseId: 'course-ja-char-17', courseLevel: 17, romaji: 'me',  kana: 'め' },
+  { char: 'モ', id: 'katakana-mo',  courseId: 'course-ja-char-17', courseLevel: 17, romaji: 'mo',  kana: 'も' },
+  { char: 'ヤ', id: 'katakana-ya',  courseId: 'course-ja-char-18', courseLevel: 18, romaji: 'ya',  kana: 'や' },
+  { char: 'ユ', id: 'katakana-yu',  courseId: 'course-ja-char-18', courseLevel: 18, romaji: 'yu',  kana: 'ゆ' },
+  { char: 'ヨ', id: 'katakana-yo',  courseId: 'course-ja-char-18', courseLevel: 18, romaji: 'yo',  kana: 'よ' },
+  { char: 'ラ', id: 'katakana-ra',  courseId: 'course-ja-char-19', courseLevel: 19, romaji: 'ra',  kana: 'ら' },
+  { char: 'リ', id: 'katakana-ri',  courseId: 'course-ja-char-19', courseLevel: 19, romaji: 'ri',  kana: 'り' },
+  { char: 'ル', id: 'katakana-ru',  courseId: 'course-ja-char-19', courseLevel: 19, romaji: 'ru',  kana: 'る' },
+  { char: 'レ', id: 'katakana-re',  courseId: 'course-ja-char-19', courseLevel: 19, romaji: 're',  kana: 'れ' },
+  { char: 'ロ', id: 'katakana-ro',  courseId: 'course-ja-char-19', courseLevel: 19, romaji: 'ro',  kana: 'ろ' },
+  { char: 'ワ', id: 'katakana-wa',  courseId: 'course-ja-char-20', courseLevel: 20, romaji: 'wa',  kana: 'わ' },
+  { char: 'ヲ', id: 'katakana-wo',  courseId: 'course-ja-char-20', courseLevel: 20, romaji: 'wo',  kana: 'を' },
+  { char: 'ン', id: 'katakana-n',   courseId: 'course-ja-char-20', courseLevel: 20, romaji: 'n',   kana: 'ん' },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function log(msg: string) { process.stdout.write(`  ${msg}\n`); }
@@ -998,6 +1120,80 @@ async function seedPhrases() {
   }
 }
 
+async function seedKanji() {
+  process.stdout.write("\n🈳  Kanji (KanjiVG)...\n");
+  let ok = 0, skip = 0;
+  for (const k of KANJI_LIST) {
+    process.stdout.write(`  ${k.char} ${k.romaji}... `);
+    let svgPaths: string[];
+    try {
+      svgPaths = await fetchKanjiVGPaths(k.char);
+      process.stdout.write(`${svgPaths.length} paths\n`);
+    } catch {
+      process.stdout.write(`⚠️  fetch failed — skip\n`);
+      skip++;
+      continue;
+    }
+    if (!svgPaths.length) { process.stdout.write(`⚠️  no paths — skip\n`); skip++; continue; }
+    await db.character.upsert({
+      where:  { id: k.id },
+      create: {
+        id: k.id, languageId: 'lang-ja', label: k.char, audioText: k.kana,
+        svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length,
+        meanings: JSON.stringify([k.meaning]), romaji: JSON.stringify([k.romaji]),
+        readings: JSON.stringify({ kana: [k.kana] }), jlpt: k.jlpt, courseLevel: 1,
+      },
+      update: {
+        svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length,
+        meanings: JSON.stringify([k.meaning]), romaji: JSON.stringify([k.romaji]),
+        readings: JSON.stringify({ kana: [k.kana] }), jlpt: k.jlpt,
+      },
+    });
+    ok++;
+  }
+  log(`${ok} kanji insérés, ${skip} ignorés`);
+}
+
+async function seedKatakana() {
+  process.stdout.write("\n🈶  Katakana (KanjiVG)...\n");
+
+  for (const course of KATAKANA_COURSES) {
+    await db.course.upsert({
+      where:  { id: course.id },
+      create: { id: course.id, languageId: 'lang-ja', type: 'character', level: course.level, title: course.title, description: course.description, prerequisiteId: course.prerequisiteId ?? null },
+      update: { title: course.title, description: course.description, prerequisiteId: course.prerequisiteId ?? null },
+    });
+    log(`✓ ${course.title}`);
+  }
+
+  let ok = 0, skip = 0;
+  for (const k of KATAKANA_LIST) {
+    process.stdout.write(`  ${k.char} ${k.romaji}... `);
+    let svgPaths: string[];
+    try {
+      svgPaths = await fetchKanjiVGPaths(k.char);
+      process.stdout.write(`${svgPaths.length} paths\n`);
+    } catch {
+      process.stdout.write(`⚠️  fetch failed — skip\n`);
+      skip++;
+      continue;
+    }
+    if (!svgPaths.length) { process.stdout.write(`⚠️  no paths — skip\n`); skip++; continue; }
+    await db.character.upsert({
+      where:  { id: k.id },
+      create: {
+        id: k.id, languageId: 'lang-ja', courseId: k.courseId, label: k.char, audioText: k.char,
+        svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length,
+        meanings: JSON.stringify([`katakana ${k.romaji}`]), romaji: JSON.stringify([k.romaji]),
+        readings: JSON.stringify({ kana: [k.kana] }), jlpt: 'N5', courseLevel: k.courseLevel,
+      },
+      update: { svgPaths: JSON.stringify(svgPaths), strokeCount: svgPaths.length, courseId: k.courseId },
+    });
+    ok++;
+  }
+  log(`${ok} katakana insérés, ${skip} ignorés`);
+}
+
 async function main() {
   process.stdout.write("🌱 Seeding Sen database...\n");
   await seedLanguages();
@@ -1005,8 +1201,10 @@ async function main() {
   await seedCharacters();
   await seedWords();
   await seedPhrases();
+  await seedKanji();
+  await seedKatakana();
   process.stdout.write(
-    `\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length} courses, ${CHARACTERS.length} characters, ${WORDS.length} words, ${PHRASES.length} phrases.\n\n`,
+    `\n✅ Done — ${LANGUAGES.length} languages, ${COURSES.length + KATAKANA_COURSES.length} courses, ${CHARACTERS.length + KANJI_LIST.length + KATAKANA_LIST.length} characters (incl. kanji & katakana), ${WORDS.length} words, ${PHRASES.length} phrases.\n\n`,
   );
 }
 
